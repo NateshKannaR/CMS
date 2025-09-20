@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2><i class="fas fa-user-shield"></i> Admin Dashboard</h2>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-clock"></i> Pending Teacher Approvals</h5>
+            </div>
+            <div class="card-body">
+                {% if pending_teachers %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for teacher in pending_teachers %}
+                            <tr>
+                                <td>{{ teacher.full_name }}</td>
+                                <td>{{ teacher.username }}</td>
+                                <td>{{ teacher.email }}</td>
+                                <td>{{ teacher.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('approve_teacher', user_id=teacher._id) }}" 
+                                       class="btn btn-success btn-sm"
+                                       onclick="return confirm('Approve this teacher?')">
+                                        <i class="fas fa-check"></i> Approve
+                                    </a>
+                                    <a href="{{ url_for('reject_teacher', user_id=teacher._id) }}" 
+                                       class="btn btn-danger btn-sm"
+                                       onclick="return confirm('Reject this teacher?')">
+                                        <i class="fas fa-times"></i> Reject
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No pending teacher approvals
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

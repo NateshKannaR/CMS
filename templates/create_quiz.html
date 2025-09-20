@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2><i class="fas fa-question-circle"></i> Create Quiz</h2>
+    
+    <form method="POST" id="quizForm">
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Quiz Title</label>
+                    <input type="text" class="form-control" name="title" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Max Participants</label>
+                    <input type="number" class="form-control" name="max_participants" value="50" min="1" max="100" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Time per Question (seconds)</label>
+                    <input type="number" class="form-control" name="question_time" value="30" min="10" max="300" required>
+                </div>
+            </div>
+        </div>
+
+        <div id="questionsContainer">
+            <div class="card mb-3 question-card">
+                <div class="card-header d-flex justify-content-between">
+                    <h6>Question 1</h6>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Question</label>
+                        <input type="text" class="form-control" name="question_0" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Option A</label>
+                            <input type="text" class="form-control" name="option_0_0" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Option B</label>
+                            <input type="text" class="form-control" name="option_0_1" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Option C</label>
+                            <input type="text" class="form-control" name="option_0_2" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label">Option D</label>
+                            <input type="text" class="form-control" name="option_0_3" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Correct Answer</label>
+                        <select class="form-control" name="correct_0" required>
+                            <option value="0">A</option>
+                            <option value="1">B</option>
+                            <option value="2">C</option>
+                            <option value="3">D</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <button type="button" class="btn btn-secondary" onclick="addQuestion()" id="addQuestionBtn">Add Question</button>
+            <button type="submit" class="btn btn-success">Create Quiz</button>
+            <small class="text-muted ms-3">Questions: <span id="questionCounter">1</span>/50</small>
+        </div>
+    </form>
+</div>
+
+<script>
+let questionCount = 1;
+const MAX_QUESTIONS = 50;
+
+function addQuestion() {
+    if (questionCount >= MAX_QUESTIONS) {
+        alert('Maximum 50 questions allowed');
+        return;
+    }
+    
+    const container = document.getElementById('questionsContainer');
+    const questionHtml = `
+        <div class="card mb-3 question-card">
+            <div class="card-header d-flex justify-content-between">
+                <h6>Question ${questionCount + 1}</h6>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Question</label>
+                    <input type="text" class="form-control" name="question_${questionCount}" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option A</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_0" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option B</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_1" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option C</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_2" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option D</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_3" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Correct Answer</label>
+                    <select class="form-control" name="correct_${questionCount}" required>
+                        <option value="0">A</option>
+                        <option value="1">B</option>
+                        <option value="2">C</option>
+                        <option value="3">D</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    questionCount++;
+    updateCounter();
+}
+
+function removeQuestion(button) {
+    if (document.querySelectorAll('.question-card').length > 1) {
+        button.closest('.question-card').remove();
+        questionCount--;
+        updateCounter();
+    }
+}
+
+function updateCounter() {
+    document.getElementById('questionCounter').textContent = questionCount;
+    const addBtn = document.getElementById('addQuestionBtn');
+    if (questionCount >= MAX_QUESTIONS) {
+        addBtn.disabled = true;
+        addBtn.textContent = 'Max Questions Reached';
+    } else {
+        addBtn.disabled = false;
+        addBtn.textContent = 'Add Question';
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2><i class="fas fa-tasks"></i> {{ assignment.title }}</h2>
+        <p>{{ assignment.description }}</p>
+        <p><strong>Due Date:</strong> {{ assignment.due_date }}</p>
+        <p><strong>Maximum Points:</strong> {{ assignment.max_points }}</p>
+        
+        {% if session.role == 'student' %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-upload"></i> Submit Assignment</h5>
+            </div>
+            <div class="card-body">
+                {% if submission %}
+                <div class="alert alert-info">
+                    <strong>Submitted:</strong> {{ submission.submitted_at }}
+                    {% if submission.grade %}
+                    <br><strong>Grade:</strong> {{ submission.grade }}/{{ assignment.max_points }}
+                    {% endif %}
+                    {% if submission.feedback %}
+                    <br><strong>Feedback:</strong> {{ submission.feedback }}
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('submit_assignment', assignment_id=assignment._id) }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="content" class="form-label">Submission Text</label>
+                        <textarea class="form-control" id="content" name="content" rows="5">{{ submission.content if submission else '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Upload File (Optional)</label>
+                        <input type="file" class="form-control" id="file" name="file">
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> {{ 'Update Submission' if submission else 'Submit Assignment' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if session.role == 'teacher' %}
+        <h3><i class="fas fa-list"></i> Submissions</h3>
+        {% for sub in submissions %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ sub.student[0].full_name if sub.student else 'Unknown Student' }}</h5>
+                <p><strong>Submitted:</strong> {{ sub.submitted_at }}</p>
+                <p>{{ sub.content }}</p>
+                {% if sub.file_path %}
+                <p><strong>File:</strong> <a href="{{ sub.file_path }}" target="_blank">Download</a></p>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('grade_submission', submission_id=sub._id) }}" class="mt-3">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <input type="number" class="form-control" name="grade" placeholder="Grade" value="{{ sub.grade if sub.grade else '' }}" max="{{ assignment.max_points }}">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" name="feedback" placeholder="Feedback" value="{{ sub.feedback if sub.feedback else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-success btn-sm">Grade</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

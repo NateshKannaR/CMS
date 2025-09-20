@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2><i class="fas fa-book"></i> {{ course.name }}</h2>
+        <p class="text-muted">{{ course.description }}</p>
+        <p><strong>Course Code:</strong> {{ course.course_code }}</p>
+        
+        {% if session.role == 'teacher' %}
+        <div class="mb-3">
+            <a href="{{ url_for('create_assignment', course_id=course._id) }}" class="btn btn-success">
+                <i class="fas fa-plus"></i> Create Assignment
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Materials Section -->
+        <h3><i class="fas fa-folder"></i> Materials</h3>
+        {% if session.role == 'teacher' %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6>Upload Material</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('upload_material', course_id=course._id) }}" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <input type="text" class="form-control" name="title" placeholder="Material title" required>
+                    </div>
+                    <div class="mb-2">
+                        <textarea class="form-control" name="description" rows="2" placeholder="Description"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <input type="file" class="form-control" name="file" required>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm">Upload</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% for material in materials %}
+        <div class="card mb-2">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">{{ material.title }}</h6>
+                        <small class="text-muted">{{ material.description }}</small>
+                    </div>
+                    <a href="{{ url_for('download_material', material_id=material._id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <h3><i class="fas fa-tasks"></i> Assignments</h3>
+        {% for assignment in assignments %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ assignment.title }}</h5>
+                <p class="card-text">{{ assignment.description }}</p>
+                <p class="text-muted">
+                    <i class="fas fa-calendar"></i> Due: {{ assignment.due_date }} | 
+                    <i class="fas fa-star"></i> Points: {{ assignment.max_points }}
+                </p>
+                <a href="{{ url_for('assignment_detail', assignment_id=assignment._id) }}" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> View Assignment
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-comments"></i> 
+                {% if session.role == 'teacher' %}
+                Student Messages
+                {% else %}
+                Ask Teacher
+                {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if session.role == 'teacher' %}
+                <!-- Teacher view: Show messages grouped by student -->
+                <div style="max-height: 300px; overflow-y: auto;">
+                    {% for message in messages %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ message.sender[0].full_name if message.sender else 'Unknown' }}</strong>
+                            <small class="text-muted">{{ message.sent_at.strftime('%m/%d %H:%M') }}</small>
+                        </div>
+                        <p class="mb-1">{{ message.content }}</p>
+                        <form method="POST" action="{{ url_for('send_message', course_id=course._id) }}" class="mt-2">
+                            <input type="hidden" name="recipient_id" value="{{ message.sender_id }}">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" name="content" placeholder="Reply..." required>
+                                <button type="submit" class="btn btn-outline-primary btn-sm">Reply</button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <!-- Student view: Private chat with teacher -->
+                <form method="POST" action="{{ url_for('send_message', course_id=course._id) }}">
+                    <div class="mb-3">
+                        <textarea class="form-control" name="content" rows="3" placeholder="Ask your teacher..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </form>
+                
+                <div class="mt-3" style="max-height: 300px; overflow-y: auto;">
+                    {% for message in messages %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ message.sender[0].full_name if message.sender else 'Unknown' }}</strong>
+                            <small class="text-muted">{{ message.sent_at.strftime('%m/%d %H:%M') }}</small>
+                        </div>
+                        <p class="mb-0">{{ message.content }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

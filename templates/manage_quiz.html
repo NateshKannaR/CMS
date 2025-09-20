@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between">
+                    <h4>{{ quiz.title }}</h4>
+                    <span class="badge bg-primary">Code: {{ quiz.quiz_code }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <strong>Status:</strong> 
+                            <span id="quizStatus" class="badge bg-{% if quiz.status == 'waiting' %}warning{% elif quiz.status == 'active' %}success{% else %}secondary{% endif %}">
+                                {{ quiz.status.title() }}
+                            </span>
+                        </div>
+                        <div>
+                            <strong>Participants:</strong> 
+                            <span id="participantCount">{{ quiz.participants|length }}</span>/{{ quiz.max_participants }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {% if quiz.status == 'waiting' %}
+                        <button class="btn btn-success" onclick="startQuiz()">
+                            <i class="fas fa-play"></i> Start Quiz
+                        </button>
+                        {% elif quiz.status == 'active' %}
+                        <button class="btn btn-warning" onclick="pauseQuiz()">
+                            <i class="fas fa-pause"></i> Pause Quiz
+                        </button>
+                        <button class="btn btn-primary" onclick="nextQuestion()">
+                            <i class="fas fa-forward"></i> Next Question
+                        </button>
+                        <button class="btn btn-danger" onclick="stopQuiz()">
+                            <i class="fas fa-stop"></i> Stop Quiz
+                        </button>
+                        {% elif quiz.status == 'paused' %}
+                        <button class="btn btn-success" onclick="startQuiz()">
+                            <i class="fas fa-play"></i> Resume Quiz
+                        </button>
+                        <button class="btn btn-danger" onclick="stopQuiz()">
+                            <i class="fas fa-stop"></i> Stop Quiz
+                        </button>
+                        {% elif quiz.status == 'stopped' %}
+                        <div class="alert alert-info">Quiz has been stopped</div>
+                        {% endif %}
+                    </div>
+
+                    <div id="currentQuestion" style="display: {% if quiz.status == 'active' %}block{% else %}none{% endif %}">
+                        <div class="d-flex justify-content-between mb-3">
+                            <h5>Current Question: <span id="questionNumber">{{ quiz.current_question + 1 }}</span></h5>
+                            <h5>Time: <span id="timer" class="badge bg-info">{{ quiz.question_time }}</span>s</h5>
+                        </div>
+                        <div id="questionText" class="mb-3"></div>
+                        
+                        <div class="row" id="answerStats">
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 id="optionA">0</h3>
+                                        <small>Option A</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 id="optionB">0</h3>
+                                        <small>Option B</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 id="optionC">0</h3>
+                                        <small>Option C</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h3 id="optionD">0</h3>
+                                        <small>Option D</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <strong>Answered:</strong> <span id="answeredCount">0</span>/<span id="totalParticipants">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Participants</h5>
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    <div id="participantsList">
+                        {% for participant in quiz.participants %}
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>{{ participant.name }}</span>
+                            <span class="badge bg-primary">{{ participant.score }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const quizId = '{{ quiz._id }}';
+const questions = {{ quiz.questions | tojson }};
+let currentQuestionIndex = {{ quiz.current_question }};
+
+function startQuiz() {
+    fetch(`/start_quiz/${quizId}`, {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function pauseQuiz() {
+    fetch(`/pause_quiz/${quizId}`, {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function stopQuiz() {
+    fetch(`/stop_quiz/${quizId}`, {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function nextQuestion() {
+    fetch(`/next_question/${quizId}`, {method: 'POST'})
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            currentQuestionIndex = data.question_number - 1;
+            loadCurrentQuestion();
+            startTimer();
+        }
+    });
+}
+
+function loadCurrentQuestion() {
+    if (currentQuestionIndex < questions.length) {
+        const question = questions[currentQuestionIndex];
+        document.getElementById('questionNumber').textContent = currentQuestionIndex + 1;
+        document.getElementById('questionText').textContent = question.question;
+    }
+}
+
+function updateStats() {
+    fetch(`/quiz_stats/${quizId}`)
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('optionA').textContent = data.answer_counts[0];
+        document.getElementById('optionB').textContent = data.answer_counts[1];
+        document.getElementById('optionC').textContent = data.answer_counts[2];
+        document.getElementById('optionD').textContent = data.answer_counts[3];
+        document.getElementById('answeredCount').textContent = data.total_answered;
+        document.getElementById('totalParticipants').textContent = data.total_participants;
+    });
+}
+
+let timerInterval;
+const questionTime = {{ quiz.question_time }};
+
+function startTimer() {
+    let timeLeft = questionTime;
+    document.getElementById('timer').textContent = timeLeft;
+    
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            // Auto move to next question when time runs out
+            nextQuestion();
+        }
+    }, 1000);
+}
+
+// Load current question and start polling for stats
+if ('{{ quiz.status }}' === 'active') {
+    loadCurrentQuestion();
+    startTimer();
+    setInterval(updateStats, 2000); // Update every 2 seconds
+}
+</script>
+{% endblock %}
