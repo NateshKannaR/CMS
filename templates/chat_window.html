@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('teacher_messages') }}">Messages</a></li>
+<li class="breadcrumb-item active">{{ student.full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card" style="height: 75vh;">
+                <!-- Chat Header -->
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    <div class="profile-circle me-3" style="width: 40px; height: 40px;">
+                        {{ student.full_name[0].upper() }}
+                    </div>
+                    <div>
+                        <h6 class="mb-0">{{ student.full_name }}</h6>
+                        <small>{{ course.name }}</small>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div class="card-body p-0" style="height: calc(75vh - 140px); overflow-y: auto;" id="chatMessages">
+                    <div class="p-3">
+                        {% for message in messages %}
+                        <div class="mb-3 d-flex {% if message.sender_id == session.user_id %}justify-content-end{% else %}justify-content-start{% endif %}">
+                            <div class="message-bubble {% if message.sender_id == session.user_id %}sent{% else %}received{% endif %}">
+                                <div class="message-content">{{ message.content }}</div>
+                                <div class="message-time">{{ message.sent_at.strftime('%H:%M') }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Message Input -->
+                <div class="card-footer bg-light">
+                    <form method="POST" action="{{ url_for('send_chat_message', student_id=student._id, course_id=course._id) }}" class="d-flex">
+                        <input type="text" name="content" class="form-control me-2" placeholder="Type a message..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.profile-circle {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.message-bubble.sent {
+    background: #007bff;
+    color: white;
+    margin-left: auto;
+}
+
+.message-bubble.received {
+    background: #e9ecef;
+    color: #333;
+    margin-right: auto;
+}
+
+.message-content {
+    margin-bottom: 5px;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.message-bubble.sent .message-time {
+    text-align: right;
+}
+
+.message-bubble.received .message-time {
+    text-align: left;
+}
+
+#chatMessages {
+    background: #f8f9fa;
+}
+
+/* Auto scroll to bottom */
+#chatMessages {
+    scroll-behavior: smooth;
+}
+</style>
+
+<script>
+// Auto scroll to bottom
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
+// Auto scroll after sending message
+document.querySelector('form').addEventListener('submit', function() {
+    setTimeout(() => {
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+});
+</script>
+{% endblock %}

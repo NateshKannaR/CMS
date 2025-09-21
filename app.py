@@ -942,6 +942,320 @@ def teacher_notification():
     courses = list(db.courses.find({'teacher_id': ObjectId(session['user_id'])}))
     return render_template('teacher_notification.html', courses=courses)
 
+@app.route('/calendar')
+def calendar():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Get assignments with due dates
+    if session['role'] == 'teacher':
+        courses = list(db.courses.find({'teacher_id': ObjectId(session['user_id'])}))
+        course_ids = [c['_id'] for c in courses]
+        assignments = list(db.assignments.find({'course_id': {'$in': course_ids}}))
+    else:
+        enrollments = db.enrollments.find({'student_id': ObjectId(session['user_id'])})
+        course_ids = [e['course_id'] for e in enrollments]
+        assignments = list(db.assignments.find({'course_id': {'$in': course_ids}}))
+    
+    # Get course names
+    courses_dict = {c['_id']: c['name'] for c in db.courses.find({'_id': {'$in': course_ids}})}
+    
+    return render_template('calendar.html', assignments=assignments, courses=courses_dict)
+
+@app.route('/video_lectures/<course_id>')
+def video_lectures(course_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    course = db.courses.find_one({'_id': ObjectId(course_id)})
+    lectures = list(db.video_lectures.find({'course_id': ObjectId(course_id)}).sort('uploaded_at', -1))
+    
+    return render_template('video_lectures.html', course=course, lectures=lectures)
+
+@app.route('/upload_video/<course_id>', methods=['POST'])
+def upload_video(course_id):
+    if 'user_id' not in session or session['role'] != 'teacher':
+        return redirect(url_for('dashboard'))
+    
+    title = request.form['title']
+    description = request.form['description']
+    video_url = request.form['video_url']
+    
+    db.video_lectures.insert_one({
+        'title': title,
+        'description': description,
+        'video_url': video_url,
+        'course_id': ObjectId(course_id),
+        'uploaded_by': ObjectId(session['user_id']),
+        'uploaded_at': datetime.now()
+    })
+    
+    flash('Video lecture uploaded successfully')
+    return redirect(url_for('video_lectures', course_id=course_id))
+
+@app.route('/whiteboard/<course_id>')
+def whiteboard(course_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    course = db.courses.find_one({'_id': ObjectId(course_id)})
+    return render_template('whiteboard.html', course=course)
+
+@app.route('/attendance/<course_id>')
+def attendance(course_id):
+    if 'user_id' not in session or session['role'] != 'teacher':
+        return redirect(url_for('dashboard'))
+    
+    course = db.courses.find_one({'_id': ObjectId(course_id)})
+    
+    # Get enrolled students
+    enrollments = list(db.enrollments.aggregate([
+        {'$match': {'course_id': ObjectId(course_id)}},
+        {'$lookup': {
+            'from': 'users',
+            'localField': 'student_id',
+            'foreignField': '_id',
+            'as': 'student'
+        }}
+    ]))
+    
+    # Get today's attendance
+    today = datetime.now().strftime('%Y-%m-%d')
+    attendance_records = list(db.attendance.find({
+        'course_id': ObjectId(course_id),
+        'date': today
+    }))
+    
+    # Create attendance status dict
+    attendance_status = {}
+    for record in attendance_records:
+        attendance_status[str(record['student_id'])] = record['status']
+    
+    return render_template('attendance.html', course=course, enrollments=enrollments, 
+                         attendance_status=attendance_status, today=today)
+
+@app.route('/mark_attendance/<course_id>', methods=['POST'])
+def mark_attendance(course_id):
+    if 'user_id' not in session or session['role'] != 'teacher':
+        return redirect(url_for('dashboard'))
+    
+    student_id = request.form['student_id']
+    status = request.form['status']
+    date = request.form['date']
+    
+    # Update or insert attendance record
+    db.attendance.update_one(
+        {
+            'course_id': ObjectId(course_id),
+            'student_id': ObjectId(student_id),
+            'date': date
+        },
+        {
+            '$set': {
+                'status': status,
+                'marked_by': ObjectId(session['user_id']),
+                'marked_at': datetime.now()
+            }
+        },
+        upsert=True
+    )
+    
+    return redirect(url_for('attendance', course_id=course_id))
+
+@app.route('/attendance_report/<course_id>')
+def attendance_report(course_id):
+    if 'user_id' not in session or session['role'] != 'teacher':
+        return redirect(url_for('dashboard'))
+    
+    course = db.courses.find_one({'_id': ObjectId(course_id)})
+    
+    # Get all attendance records for this course
+    records = list(db.attendance.aggregate([
+        {'$match': {'course_id': ObjectId(course_id)}},
+        {'$lookup': {
+            'from': 'users',
+            'localField': 'student_id',
+            'foreignField': '_id',
+            'as': 'student'
+        }},
+        {'$sort': {'date': -1}}
+    ]))
+    
+    return render_template('attendance_report.html', course=course, records=records)
+
+@app.route('/teacher_messages')
+def teacher_messages():
+    if 'user_id' not in session or session['role'] != 'teacher':
+        return redirect(url_for('dashboard'))
+    
+    # Get all students who have messaged this teacher
+    teacher_courses = list(db.courses.find({'teacher_id': ObjectId(session['user_id'])}))
+    course_ids = [c['_id'] for c in teacher_courses]
+    
+    # Get unique students with their latest message
+    pipeline = [
+        {'$match': {
+            'course_id': {'$in': course_ids},
+            'recipient_id': ObjectId(session['user_id'])
+        }},
+        {'$sort': {'sent_at': -1}},
+        {'$group': {
+            '_id': '$sender_id',
+            'latest_message': {'$first': '$$ROOT'}
+        }},
+        {'$lookup': {
+            'from': 'users',
+            'localField': '_id',
+            'foreignField': '_id',
+            'as': 'student'
+        }},
+        {'$lookup': {
+            'from': 'courses',
+            'localField': 'latest_message.course_id',
+            'foreignField': '_id',
+            'as': 'course'
+        }}
+    ]
+    
+    conversations = list(db.messages.aggregate(pipeline))
+    
+    return render_template('teacher_messages.html', conversations=conversations)
+
+@app.route('/chat/<student_id>/<course_id>')
+def chat_with_student(student_id, course_id):
+    if 'user_id' not in session or session['role'] != 'teacher':
+        return redirect(url_for('dashboard'))
+    
+    student = db.users.find_one({'_id': ObjectId(student_id)})
+    course = db.courses.find_one({'_id': ObjectId(course_id)})
+    
+    # Get all messages between teacher and this student in this course
+    messages = list(db.messages.find({
+        'course_id': ObjectId(course_id),
+        '$or': [
+            {'sender_id': ObjectId(session['user_id']), 'recipient_id': ObjectId(student_id)},
+            {'sender_id': ObjectId(student_id), 'recipient_id': ObjectId(session['user_id'])}
+        ]
+    }).sort('sent_at', 1))
+    
+    return render_template('chat_window.html', student=student, course=course, messages=messages)
+
+@app.route('/send_chat_message/<student_id>/<course_id>', methods=['POST'])
+def send_chat_message(student_id, course_id):
+    if 'user_id' not in session:
+        return {'success': False}, 403
+    
+    content = request.form['content']
+    
+    db.messages.insert_one({
+        'course_id': ObjectId(course_id),
+        'sender_id': ObjectId(session['user_id']),
+        'recipient_id': ObjectId(student_id),
+        'content': content,
+        'sent_at': datetime.now()
+    })
+    
+    return redirect(url_for('chat_with_student', student_id=student_id, course_id=course_id))
+
+@app.route('/admin_practice_quiz', methods=['GET', 'POST'])
+def admin_practice_quiz():
+    if 'user_id' not in session or session['username'] != 'admin':
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        title = request.form['title']
+        category = request.form['category']
+        difficulty = request.form['difficulty']
+        questions = []
+        
+        i = 0
+        while f'question_{i}' in request.form:
+            question = {
+                'question': request.form[f'question_{i}'],
+                'options': [
+                    request.form[f'option_{i}_0'],
+                    request.form[f'option_{i}_1'],
+                    request.form[f'option_{i}_2'],
+                    request.form[f'option_{i}_3']
+                ],
+                'correct_answer': int(request.form[f'correct_{i}'])
+            }
+            questions.append(question)
+            i += 1
+        
+        db.practice_quizzes.insert_one({
+            'title': title,
+            'category': category,
+            'difficulty': difficulty,
+            'questions': questions,
+            'created_by': ObjectId(session['user_id']),
+            'created_at': datetime.now()
+        })
+        
+        flash('Practice quiz created successfully')
+        return redirect(url_for('admin_practice_quiz'))
+    
+    # Get existing practice quizzes
+    quizzes = list(db.practice_quizzes.find().sort('created_at', -1))
+    return render_template('admin_practice_quiz.html', quizzes=quizzes)
+
+@app.route('/practice_quiz')
+def practice_quiz():
+    if 'user_id' not in session or session['role'] != 'student':
+        return redirect(url_for('dashboard'))
+    
+    # Get all practice quizzes
+    quizzes = list(db.practice_quizzes.find())
+    return render_template('practice_quiz_list.html', quizzes=quizzes)
+
+@app.route('/take_practice_quiz/<quiz_id>')
+def take_practice_quiz(quiz_id):
+    if 'user_id' not in session or session['role'] != 'student':
+        return redirect(url_for('dashboard'))
+    
+    quiz = db.practice_quizzes.find_one({'_id': ObjectId(quiz_id)})
+    return render_template('take_practice_quiz.html', quiz=quiz)
+
+@app.route('/submit_practice_quiz/<quiz_id>', methods=['POST'])
+def submit_practice_quiz(quiz_id):
+    if 'user_id' not in session or session['role'] != 'student':
+        return redirect(url_for('dashboard'))
+    
+    quiz = db.practice_quizzes.find_one({'_id': ObjectId(quiz_id)})
+    score = 0
+    total = len(quiz['questions'])
+    results = []
+    
+    for i, question in enumerate(quiz['questions']):
+        user_answer = int(request.form.get(f'answer_{i}', -1))
+        correct_answer = question['correct_answer']
+        is_correct = user_answer == correct_answer
+        
+        if is_correct:
+            score += 1
+            
+        results.append({
+            'question': question['question'],
+            'user_answer': user_answer,
+            'correct_answer': correct_answer,
+            'is_correct': is_correct,
+            'options': question['options']
+        })
+    
+    # Save practice result
+    db.practice_results.insert_one({
+        'student_id': ObjectId(session['user_id']),
+        'quiz_id': ObjectId(quiz_id),
+        'score': score,
+        'total': total,
+        'percentage': round((score/total)*100, 2),
+        'completed_at': datetime.now()
+    })
+    
+    return render_template('practice_quiz_result.html', 
+                         quiz=quiz, score=score, total=total, 
+                         percentage=round((score/total)*100, 2), results=results)
+
 @app.route('/logout')
 def logout():
     session.clear()

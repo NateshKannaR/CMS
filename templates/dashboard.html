@@ -57,16 +57,53 @@
             background: #0056b3;
             transform: scale(1.1);
         }
+        .messages-float {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .messages-float:hover {
+            background: #1e7e34;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-graduation-cap"></i> CMS Dashboard
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <div class="bg-white rounded-circle p-2 me-2">
+                    <i class="fas fa-graduation-cap text-primary"></i>
+                </div>
+                <span class="fw-bold">EduCMS</span>
             </a>
             <div class="d-flex align-items-center">
+                <!-- Calendar -->
+                <a href="{{ url_for('calendar') }}" class="btn btn-outline-light btn-sm me-2">
+                    <i class="fas fa-calendar"></i>
+                </a>
+                
+                {% if session.role == 'teacher' %}
+                <!-- Send Notification -->
+                <a href="{{ url_for('teacher_notification') }}" class="btn btn-outline-light btn-sm me-3">
+                    <i class="fas fa-paper-plane"></i>
+                </a>
+                {% endif %}
+                
                 <!-- Notifications -->
                 <div class="dropdown me-3">
                     <div class="notification-badge" data-bs-toggle="dropdown" aria-expanded="false">
@@ -106,14 +143,41 @@
         </div>
     </nav>
 
-    <div class="container mt-4">
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-success">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+    <div class="container-fluid mt-0">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="p-3">
+                    <h6 class="text-muted mb-3" data-translate="dashboard">DASHBOARD</h6>
+                    <nav class="nav flex-column">
+                        <a class="nav-link active d-flex align-items-center mb-2" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-home me-2"></i>
+                            <span data-translate="dashboard">Dashboard</span>
+                        </a>
+                        <a class="nav-link d-flex align-items-center mb-2" href="{{ url_for('calendar') }}">
+                            <i class="fas fa-calendar me-2"></i>
+                            <span data-translate="calendar">Calendar</span>
+                        </a>
+                        {% if session.role == 'student' %}
+                        <a class="nav-link d-flex align-items-center mb-2" href="{{ url_for('practice_quiz') }}">
+                            <i class="fas fa-brain me-2"></i>
+                            <span data-translate="practice_quiz">Practice Quiz</span>
+                        </a>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10">
+                <div class="p-4">
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            {% for message in messages %}
+                                <div class="alert alert-success">{{ message }}</div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
 
         <div class="row">
             <!-- Courses Section -->
@@ -128,9 +192,7 @@
                     <a href="{{ url_for('create_quiz') }}" class="btn btn-warning ms-2">
                         <i class="fas fa-question-circle"></i> Create Quiz
                     </a>
-                    <a href="{{ url_for('teacher_notification') }}" class="btn btn-info ms-2">
-                        <i class="fas fa-bell"></i> Send Notification
-                    </a>
+
                 </div>
                 {% endif %}
 
@@ -179,7 +241,19 @@
                     <div class="card-body">
                         <a href="{{ url_for('join_quiz') }}" class="btn btn-warning w-100">
                             <i class="fas fa-play"></i> Join Quiz
+                        </a>
                         </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header bg-success text-white text-center">
+                        <h5><i class="fas fa-brain"></i> Practice Quiz</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ url_for('practice_quiz') }}" class="btn btn-success w-100">
+                            <i class="fas fa-dumbbell"></i> Start Practice
+                        </a>
                     </div>
                 </div>
                 {% endif %}
@@ -272,36 +346,41 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    {% if session.role == 'student' %}
-    <!-- Floating Chatbot Button -->
-    <div class="chatbot-float" onclick="toggleChatbot()">
-        <i class="fas fa-robot"></i>
-    </div>
-
-    <!-- Chatbot Modal -->
-    <div class="modal fade" id="chatbotModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-robot"></i> AI Assistant</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="chatMessages" style="height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; margin-bottom: 10px;">
-                        <div class="text-muted">Hi! I'm your AI assistant. Ask me anything about your studies!</div>
-                    </div>
-                    <div class="input-group">
-                        <input type="text" id="chatInput" class="form-control" placeholder="Ask me anything..." onkeypress="handleEnter(event)">
-                        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {% if session.user_id %}
+        {% if session.role == 'student' %}
+        <!-- Floating Chatbot Button -->
+        <div class="chatbot-float" onclick="toggleChatbot()">
+            <i class="fas fa-robot"></i>
+        </div>
+        {% elif session.role == 'teacher' %}
+        <!-- Floating Messages Button -->
+        <div class="messages-float" onclick="window.location.href='{{ url_for('teacher_messages') }}'">
+            <i class="fas fa-comments"></i>
+        </div>
+        {% endif %}
     {% endif %}
 
+    <!-- Chatbot Popup -->
+    <div id="chatbotPopup" style="display: none; position: fixed; bottom: 90px; right: 20px; width: 350px; height: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 1001;">
+        <div style="background: #007bff; color: white; padding: 10px; border-radius: 10px 10px 0 0; display: flex; justify-content: between; align-items: center;">
+            <h6 style="margin: 0;"><i class="fas fa-robot"></i> AI Assistant</h6>
+            <button onclick="closeChatbot()" style="background: none; border: none; color: white; font-size: 18px; margin-left: auto;">&times;</button>
+        </div>
+        <div id="chatMessages" style="height: 280px; overflow-y: auto; padding: 10px; border-bottom: 1px solid #ddd;">
+            <div class="text-muted">Hi! I'm your AI assistant. Ask me anything about your studies!</div>
+        </div>
+        <div style="padding: 10px;">
+            <div class="input-group input-group-sm">
+                <input type="text" id="chatInput" class="form-control" placeholder="Ask me anything..." onkeypress="handleEnter(event)">
+                <button class="btn btn-primary btn-sm" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Load notifications
@@ -329,8 +408,12 @@
 
         // Chatbot functions
         function toggleChatbot() {
-            const modal = new bootstrap.Modal(document.getElementById('chatbotModal'));
-            modal.show();
+            const popup = document.getElementById('chatbotPopup');
+            popup.style.display = popup.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        function closeChatbot() {
+            document.getElementById('chatbotPopup').style.display = 'none';
         }
 
         function handleEnter(event) {

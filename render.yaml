@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: brainlow-admin
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn admin_app:app
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true

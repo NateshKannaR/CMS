@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course._id) }}">{{ course.name }}</a></li>
+<li class="breadcrumb-item active">Attendance</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between mb-4">
+        <h2><i class="fas fa-user-check"></i> Attendance - {{ course.name }}</h2>
+        <div>
+            <span class="badge bg-info">{{ today }}</span>
+            <a href="{{ url_for('attendance_report', course_id=course._id) }}" class="btn btn-outline-primary btn-sm ms-2">
+                <i class="fas fa-chart-bar"></i> View Report
+            </a>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Mark Attendance for Today</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in enrollments %}
+                        {% set student = enrollment.student[0] %}
+                        {% set student_id = student._id|string %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="profile-circle me-2" style="width: 30px; height: 30px; font-size: 12px;">
+                                        {{ student.full_name[0].upper() }}
+                                    </div>
+                                    {{ student.full_name }}
+                                </div>
+                            </td>
+                            <td>{{ student.email }}</td>
+                            <td>
+                                {% if student_id in attendance_status %}
+                                    {% if attendance_status[student_id] == 'present' %}
+                                    <span class="badge bg-success">Present</span>
+                                    {% elif attendance_status[student_id] == 'absent' %}
+                                    <span class="badge bg-danger">Absent</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Late</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="badge bg-secondary">Not Marked</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('mark_attendance', course_id=course._id) }}" class="d-inline">
+                                    <input type="hidden" name="student_id" value="{{ student._id }}">
+                                    <input type="hidden" name="date" value="{{ today }}">
+                                    
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="submit" name="status" value="present" class="btn btn-outline-success btn-sm">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                        <button type="submit" name="status" value="late" class="btn btn-outline-warning btn-sm">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                        <button type="submit" name="status" value="absent" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success" id="presentCount">0</h3>
+                    <small>Present</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning" id="lateCount">0</h3>
+                    <small>Late</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger" id="absentCount">0</h3>
+                    <small>Absent</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Count attendance status
+let presentCount = 0;
+let lateCount = 0;
+let absentCount = 0;
+
+{% for enrollment in enrollments %}
+{% set student_id = enrollment.student[0]._id|string %}
+{% if student_id in attendance_status %}
+    {% if attendance_status[student_id] == 'present' %}
+    presentCount++;
+    {% elif attendance_status[student_id] == 'late' %}
+    lateCount++;
+    {% elif attendance_status[student_id] == 'absent' %}
+    absentCount++;
+    {% endif %}
+{% endif %}
+{% endfor %}
+
+document.getElementById('presentCount').textContent = presentCount;
+document.getElementById('lateCount').textContent = lateCount;
+document.getElementById('absentCount').textContent = absentCount;
+</script>
+</div>
+{% endblock %}

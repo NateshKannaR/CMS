@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course_id) }}">Course</a></li>
+<li class="breadcrumb-item active">Create Assignment</li>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">

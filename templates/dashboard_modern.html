@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar p-0">
+            <div class="p-3">
+                <h6 class="text-muted mb-3" data-translate="dashboard">DASHBOARD</h6>
+                <nav class="nav flex-column">
+                    <a class="nav-link active d-flex align-items-center mb-2" href="{{ url_for('dashboard') }}">
+                        <i class="fas fa-home me-2"></i>
+                        <span data-translate="dashboard">Dashboard</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center mb-2" href="#">
+                        <i class="fas fa-book me-2"></i>
+                        <span data-translate="courses">Courses</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center mb-2" href="#">
+                        <i class="fas fa-tasks me-2"></i>
+                        <span data-translate="assignments">Assignments</span>
+                    </a>
+                    <a class="nav-link d-flex align-items-center mb-2" href="{{ url_for('calendar') }}">
+                        <i class="fas fa-calendar me-2"></i>
+                        <span data-translate="calendar">Calendar</span>
+                    </a>
+                    {% if session.role == 'student' %}
+                    <a class="nav-link d-flex align-items-center mb-2" href="{{ url_for('practice_quiz') }}">
+                        <i class="fas fa-brain me-2"></i>
+                        <span data-translate="practice_quiz">Practice Quiz</span>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 class="mb-1" data-translate="dashboard">Dashboard</h2>
+                        <p class="text-muted">{{ session.role|title }} Portal</p>
+                    </div>
+                    {% if session.role == 'teacher' %}
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('create_course') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            <span data-translate="create_course">Create Course</span>
+                        </a>
+                        <a href="{{ url_for('create_quiz') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-question-circle me-1"></i>
+                            Create Quiz
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0">{{ courses|length }}</h3>
+                                        <p class="mb-0" data-translate="courses">Courses</p>
+                                    </div>
+                                    <i class="fas fa-book fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0">12</h3>
+                                        <p class="mb-0" data-translate="assignments">Assignments</p>
+                                    </div>
+                                    <i class="fas fa-tasks fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0">5</h3>
+                                        <p class="mb-0" data-translate="messages">Messages</p>
+                                    </div>
+                                    <i class="fas fa-comments fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-0 bg-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <h3 class="mb-0">85%</h3>
+                                        <p class="mb-0">Progress</p>
+                                    </div>
+                                    <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Courses Grid -->
+                <div class="row">
+                    <div class="col-12">
+                        <h4 class="mb-3" data-translate="courses">My Courses</h4>
+                    </div>
+                    {% for course in courses %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-primary">{{ course.course_code }}</span>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="{{ url_for('course_detail', course_id=course._id) }}">View Details</a></li>
+                                            <li><a class="dropdown-item" href="{{ url_for('video_lectures', course_id=course._id) }}">Video Lectures</a></li>
+                                            <li><a class="dropdown-item" href="{{ url_for('whiteboard', course_id=course._id) }}">Whiteboard</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{ course.name }}</h5>
+                                <p class="card-text text-muted">{{ course.description[:100] }}...</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-users me-1"></i>
+                                        25 students
+                                    </small>
+                                    <a href="{{ url_for('course_detail', course_id=course._id) }}" class="btn btn-primary btn-sm">
+                                        Enter Course
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Student Join Section -->
+                {% if session.role == 'student' %}
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-plus-circle fa-3x text-primary mb-3"></i>
+                                <h5 data-translate="join_course">Join New Course</h5>
+                                <form method="POST" action="{{ url_for('join_course') }}" class="mt-3">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="course_code" placeholder="Enter Course Code" required>
+                                        <button type="submit" class="btn btn-primary">Join</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center">
+                                <i class="fas fa-brain fa-3x text-success mb-3"></i>
+                                <h5 data-translate="practice_quiz">Practice Quiz</h5>
+                                <p class="text-muted">Improve your skills with practice quizzes</p>
+                                <a href="{{ url_for('practice_quiz') }}" class="btn btn-success">Start Practice</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Floating Action Button -->
+{% if session.role == 'student' %}
+<div class="floating-btn bg-primary text-white" onclick="toggleChatbot()">
+    <i class="fas fa-robot"></i>
+</div>
+{% elif session.role == 'teacher' %}
+<div class="floating-btn bg-success text-white" onclick="window.location.href='{{ url_for('teacher_messages') }}'">
+    <i class="fas fa-comments"></i>
+</div>
+{% endif %}
+{% endblock %}

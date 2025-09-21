@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('create_quiz') }}">Create Quiz</a></li>
+<li class="breadcrumb-item active">{{ quiz.title }}</li>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row">

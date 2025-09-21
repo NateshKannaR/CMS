@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course._id) }}">{{ course.name }}</a></li>
+<li class="breadcrumb-item active">Whiteboard</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between mb-3">
+        <h3><i class="fas fa-chalkboard"></i> Virtual Whiteboard - {{ course.name }}</h3>
+        <div>
+            <button class="btn btn-secondary" onclick="clearCanvas()">Clear</button>
+            <button class="btn btn-primary" onclick="saveCanvas()">Save</button>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h6>Tools</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Brush Size</label>
+                        <input type="range" class="form-range" id="brushSize" min="1" max="20" value="5">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Color</label>
+                        <input type="color" class="form-control" id="brushColor" value="#000000">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button class="btn btn-outline-dark btn-sm w-100" onclick="setTool('pen')">
+                            <i class="fas fa-pen"></i> Pen
+                        </button>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <button class="btn btn-outline-secondary btn-sm w-100" onclick="setTool('eraser')">
+                            <i class="fas fa-eraser"></i> Eraser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-10">
+            <div class="border">
+                <canvas id="whiteboard" width="800" height="600" style="cursor: crosshair; background: white;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('whiteboard');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let currentTool = 'pen';
+
+// Set canvas size to container
+canvas.width = canvas.offsetWidth;
+canvas.height = 600;
+
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+
+function startDrawing(e) {
+    isDrawing = true;
+    draw(e);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.lineWidth = document.getElementById('brushSize').value;
+    ctx.lineCap = 'round';
+    
+    if (currentTool === 'pen') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = document.getElementById('brushColor').value;
+    } else if (currentTool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+    }
+    
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+}
+
+function stopDrawing() {
+    if (isDrawing) {
+        isDrawing = false;
+        ctx.beginPath();
+    }
+}
+
+function setTool(tool) {
+    currentTool = tool;
+    if (tool === 'eraser') {
+        canvas.style.cursor = 'grab';
+    } else {
+        canvas.style.cursor = 'crosshair';
+    }
+}
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function saveCanvas() {
+    const link = document.createElement('a');
+    link.download = 'whiteboard.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+</script>
+{% endblock %}

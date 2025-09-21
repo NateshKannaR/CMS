@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Admin Practice Quiz</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2><i class="fas fa-brain"></i> Manage Practice Quizzes</h2>
+    
+    <!-- Tab Navigation -->
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#manualTab">Manual Creation</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#csvTab">CSV Upload</a>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- CSV Upload Tab -->
+        <div class="tab-pane fade" id="csvTab">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Upload Quiz via CSV</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>CSV Format:</strong> question, option_a, option_b, option_c, option_d, correct_answer (0-3)
+                    </div>
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Quiz Title</label>
+                                <input type="text" class="form-control" name="csv_title" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Category</label>
+                                <select class="form-control" name="csv_category" required>
+                                    <option value="Math">Math</option>
+                                    <option value="Science">Science</option>
+                                    <option value="English">English</option>
+                                    <option value="History">History</option>
+                                    <option value="General">General Knowledge</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Difficulty</label>
+                                <select class="form-control" name="csv_difficulty" required>
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CSV File</label>
+                            <input type="file" class="form-control" name="csv_file" accept=".csv" required>
+                        </div>
+                        <button type="submit" class="btn btn-success">Upload CSV Quiz</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Creation Tab -->
+        <div class="tab-pane fade show active" id="manualTab">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Create New Practice Quiz</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="practiceQuizForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Quiz Title</label>
+                                <input type="text" class="form-control" name="title" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Category</label>
+                                <select class="form-control" name="category" required>
+                                    <option value="Math">Math</option>
+                                    <option value="Science">Science</option>
+                                    <option value="English">English</option>
+                                    <option value="History">History</option>
+                                    <option value="General">General Knowledge</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Difficulty</label>
+                                <select class="form-control" name="difficulty" required>
+                                    <option value="Easy">Easy</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="questionsContainer">
+                            <div class="card mb-3 question-card">
+                                <div class="card-header d-flex justify-content-between">
+                                    <h6>Question 1</h6>
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Question</label>
+                                        <input type="text" class="form-control" name="question_0" required>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Option A</label>
+                                            <input type="text" class="form-control" name="option_0_0" required>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Option B</label>
+                                            <input type="text" class="form-control" name="option_0_1" required>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Option C</label>
+                                            <input type="text" class="form-control" name="option_0_2" required>
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label">Option D</label>
+                                            <input type="text" class="form-control" name="option_0_3" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Correct Answer</label>
+                                        <select class="form-control" name="correct_0" required>
+                                            <option value="0">A</option>
+                                            <option value="1">B</option>
+                                            <option value="2">C</option>
+                                            <option value="3">D</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <button type="button" class="btn btn-secondary" onclick="addQuestion()">Add Question</button>
+                            <button type="submit" class="btn btn-success">Create Practice Quiz</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Existing Practice Quizzes</h5>
+                </div>
+                <div class="card-body">
+                    {% for quiz in quizzes %}
+                    <div class="border-bottom pb-2 mb-2">
+                        <h6>{{ quiz.title }}</h6>
+                        <small class="text-muted">{{ quiz.category }} - {{ quiz.difficulty }}</small><br>
+                        <small class="text-muted">{{ quiz.questions|length }} questions</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+let questionCount = 1;
+
+function addQuestion() {
+    const container = document.getElementById('questionsContainer');
+    const questionHtml = `
+        <div class="card mb-3 question-card">
+            <div class="card-header d-flex justify-content-between">
+                <h6>Question ${questionCount + 1}</h6>
+                <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Question</label>
+                    <input type="text" class="form-control" name="question_${questionCount}" required>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option A</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_0" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option B</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_1" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option C</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_2" required>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label class="form-label">Option D</label>
+                        <input type="text" class="form-control" name="option_${questionCount}_3" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Correct Answer</label>
+                    <select class="form-control" name="correct_${questionCount}" required>
+                        <option value="0">A</option>
+                        <option value="1">B</option>
+                        <option value="2">C</option>
+                        <option value="3">D</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', questionHtml);
+    questionCount++;
+}
+
+function removeQuestion(button) {
+    if (document.querySelectorAll('.question-card').length > 1) {
+        button.closest('.question-card').remove();
+    }
+}
+</script>
+{% endblock %}

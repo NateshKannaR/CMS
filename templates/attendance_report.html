@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course._id) }}">{{ course.name }}</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('attendance', course_id=course._id) }}">Attendance</a></li>
+<li class="breadcrumb-item active">Report</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between mb-4">
+        <h2><i class="fas fa-chart-bar"></i> Attendance Report - {{ course.name }}</h2>
+        <a href="{{ url_for('attendance', course_id=course._id) }}" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Back to Attendance
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Attendance History</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Student</th>
+                            <th>Status</th>
+                            <th>Marked At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in records %}
+                        <tr>
+                            <td>{{ record.date }}</td>
+                            <td>{{ record.student[0].full_name }}</td>
+                            <td>
+                                {% if record.status == 'present' %}
+                                <span class="badge bg-success">Present</span>
+                                {% elif record.status == 'absent' %}
+                                <span class="badge bg-danger">Absent</span>
+                                {% else %}
+                                <span class="badge bg-warning">Late</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ record.marked_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not records %}
+            <div class="text-center text-muted">
+                <p>No attendance records found.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

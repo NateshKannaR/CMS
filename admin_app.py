@@ -3,13 +3,15 @@ from werkzeug.security import check_password_hash
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
+import os
 
 app = Flask(__name__)
-app.secret_key = 'admin-secret-key'
+app.secret_key = os.environ.get('SECRET_KEY', 'admin-secret-key')
 app.permanent_session_lifetime = timedelta(hours=24)
 
 # MongoDB connection
-client = MongoClient('mongodb+srv://Natesh:Natesh1974@cluster0.wwp3oig.mongodb.net/')
+mongo_uri = os.environ.get('MONGODB_URI', 'mongodb+srv://Natesh:Natesh1974@cluster0.wwp3oig.mongodb.net/')
+client = MongoClient(mongo_uri)
 db = client.cms_database
 
 @app.route('/', methods=['GET', 'POST'])
@@ -93,6 +95,8 @@ def bulk_upload():
             return redirect(url_for('bulk_upload'))
         
         file = request.files['csv_file']
+        user_type = request.form.get('user_type', 'student')
+        
         if file.filename == '':
             flash('No file selected')
             return redirect(url_for('bulk_upload'))
@@ -117,9 +121,9 @@ def bulk_upload():
                             'email': row['email'],
                             'password': generate_password_hash(row['password']),
                             'plain_password': row['password'],
-                            'role': row['role'],
+                            'role': user_type,
                             'full_name': row['full_name'],
-                            'status': 'approved' if row['role'] == 'student' else 'pending',
+                            'status': 'approved' if user_type == 'student' else 'pending',
                             'created_at': datetime.now()
                         }
                         db.users.insert_one(user_data)
@@ -129,7 +133,7 @@ def bulk_upload():
                 except:
                     error_count += 1
             
-            flash(f'Upload complete: {success_count} users added, {error_count} errors')
+            flash(f'{user_type.title()} upload complete: {success_count} users added, {error_count} errors')
         else:
             flash('Please upload a CSV file')
     
@@ -263,10 +267,92 @@ def delete_training(training_id):
     flash('Training data deleted successfully')
     return redirect(url_for('train_ai'))
 
+@app.route('/admin_practice_quiz', methods=['GET', 'POST'])
+def admin_practice_quiz():
+    if 'admin_id' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        if 'csv_file' in request.files and request.files['csv_file'].filename:
+            # CSV Upload
+            file = request.files['csv_file']
+            if file.filename.endswith('.csv'):
+                import csv
+                from io import StringIO
+                
+                stream = StringIO(file.stream.read().decode("UTF8"), newline=None)
+                csv_input = csv.DictReader(stream)
+                
+                title = request.form['csv_title']
+                category = request.form['csv_category']
+                difficulty = request.form['csv_difficulty']
+                questions = []
+                
+                for row in csv_input:
+                    if all(key in row for key in ['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer']):
+                        question = {
+                            'question': row['question'],
+                            'options': [row['option_a'], row['option_b'], row['option_c'], row['option_d']],
+                            'correct_answer': int(row['correct_answer'])
+                        }
+                        questions.append(question)
+                
+                if questions:
+                    db.practice_quizzes.insert_one({
+                        'title': title,
+                        'category': category,
+                        'difficulty': difficulty,
+                        'questions': questions,
+                        'created_by': ObjectId(session['admin_id']),
+                        'created_at': datetime.now()
+                    })
+                    flash(f'Practice quiz created from CSV with {len(questions)} questions')
+                else:
+                    flash('No valid questions found in CSV')
+            else:
+                flash('Please upload a CSV file')
+        else:
+            # Manual Form
+            title = request.form['title']
+            category = request.form['category']
+            difficulty = request.form['difficulty']
+            questions = []
+            
+            i = 0
+            while f'question_{i}' in request.form:
+                question = {
+                    'question': request.form[f'question_{i}'],
+                    'options': [
+                        request.form[f'option_{i}_0'],
+                        request.form[f'option_{i}_1'],
+                        request.form[f'option_{i}_2'],
+                        request.form[f'option_{i}_3']
+                    ],
+                    'correct_answer': int(request.form[f'correct_{i}'])
+                }
+                questions.append(question)
+                i += 1
+            
+            db.practice_quizzes.insert_one({
+                'title': title,
+                'category': category,
+                'difficulty': difficulty,
+                'questions': questions,
+                'created_by': ObjectId(session['admin_id']),
+                'created_at': datetime.now()
+            })
+            
+            flash('Practice quiz created successfully')
+        return redirect(url_for('admin_practice_quiz'))
+    
+    quizzes = list(db.practice_quizzes.find().sort('created_at', -1))
+    return render_template('admin_practice_quiz.html', quizzes=quizzes)
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=False)

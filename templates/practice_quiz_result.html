@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('practice_quiz') }}">Practice Quiz</a></li>
+<li class="breadcrumb-item active">Results</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-{% if percentage >= 80 %}success{% elif percentage >= 60 %}warning{% else %}danger{% endif %} text-white text-center">
+                    <h4><i class="fas fa-trophy"></i> Quiz Results</h4>
+                    <h2>{{ score }}/{{ total }} ({{ percentage }}%)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        {% if percentage >= 80 %}
+                        <i class="fas fa-star fa-3x text-success mb-2"></i>
+                        <h5 class="text-success">Excellent!</h5>
+                        {% elif percentage >= 60 %}
+                        <i class="fas fa-thumbs-up fa-3x text-warning mb-2"></i>
+                        <h5 class="text-warning">Good Job!</h5>
+                        {% else %}
+                        <i class="fas fa-redo fa-3x text-danger mb-2"></i>
+                        <h5 class="text-danger">Keep Practicing!</h5>
+                        {% endif %}
+                    </div>
+                    
+                    <h5>Review Answers:</h5>
+                    {% for result in results %}
+                    <div class="mb-3 p-3 border rounded {% if result.is_correct %}border-success{% else %}border-danger{% endif %}">
+                        <div class="d-flex justify-content-between">
+                            <strong>Question {{ loop.index }}</strong>
+                            {% if result.is_correct %}
+                            <span class="badge bg-success">Correct</span>
+                            {% else %}
+                            <span class="badge bg-danger">Incorrect</span>
+                            {% endif %}
+                        </div>
+                        <p class="mt-2">{{ result.question }}</p>
+                        
+                        {% if not result.is_correct %}
+                        <div class="mt-2">
+                            <small class="text-danger">Your answer: {{ ['A', 'B', 'C', 'D'][result.user_answer] }}. {{ result.options[result.user_answer] }}</small><br>
+                            <small class="text-success">Correct answer: {{ ['A', 'B', 'C', 'D'][result.correct_answer] }}. {{ result.options[result.correct_answer] }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('practice_quiz') }}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left"></i> Back to Practice Quizzes
+                        </a>
+                        <a href="{{ url_for('take_practice_quiz', quiz_id=quiz._id) }}" class="btn btn-success">
+                            <i class="fas fa-redo"></i> Retake Quiz
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
