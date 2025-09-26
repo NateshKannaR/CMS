@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('student_messages') }}">Messages</a></li>
+<li class="breadcrumb-item active">{{ teacher.full_name }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card chat-container">
+                <!-- Chat Header -->
+                <div class="card-header bg-primary text-white d-flex align-items-center">
+                    <div class="profile-circle me-3">
+                        {{ teacher.full_name[0].upper() }}
+                    </div>
+                    <div>
+                        <h6 class="mb-0">{{ teacher.full_name }}</h6>
+                        <small>{{ course.name }}</small>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div class="card-body chat-messages" id="chatMessages">
+                    <div class="p-3">
+                        {% if messages %}
+                            {% set last_date = '' %}
+                            {% for message in messages %}
+                                {% set message_date = message.sent_at.strftime('%Y-%m-%d') %}
+                                {% if message_date != last_date %}
+                                    {% set last_date = message_date %}
+                                    <div class="message-day-separator">
+                                        <span>
+                                            {{ message.sent_at.strftime('%B %d, %Y') }}
+                                        </span>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="mb-3 d-flex {% if message.sender_id == session.user_id %}justify-content-end{% else %}justify-content-start{% endif %}">
+                                    <div class="message-bubble {% if message.sender_id == session.user_id %}sent{% else %}received{% endif %}">
+                                        <div class="message-content">{{ message.content }}</div>
+                                        <div class="message-time">{{ message.sent_at.strftime('%H:%M') }}</div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-comments fa-3x mb-3 d-block"></i>
+                                <h5>No messages yet</h5>
+                                <p>Start a conversation with your teacher!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Message Input -->
+                <div class="card-footer bg-light">
+                    <form method="POST" action="{{ url_for('send_student_message', teacher_id=teacher._id, course_id=course._id) }}" class="d-flex" id="messageForm">
+                        <input type="text" name="content" class="form-control me-2" placeholder="Type a message..." required id="messageInput">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-container {
+    height: 75vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-circle {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.chat-messages {
+    background: #f8f9fa;
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(75vh - 140px);
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message-bubble.sent {
+    background: #007bff;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
+}
+
+.message-bubble.received {
+    background: white;
+    color: #333;
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+.message-content {
+    margin-bottom: 5px;
+    line-height: 1.4;
+}
+
+.message-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.message-bubble.sent .message-time {
+    text-align: right;
+}
+
+.message-bubble.received .message-time {
+    text-align: left;
+}
+
+.message-day-separator {
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+}
+
+.message-day-separator::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #dee2e6;
+}
+
+.message-day-separator span {
+    background: #f8f9fa;
+    padding: 5px 15px;
+    color: #6c757d;
+    font-size: 0.8rem;
+    border-radius: 15px;
+    border: 1px solid #dee2e6;
+}
+
+/* WhatsApp-like styling */
+.message-bubble.sent {
+    background: #dcf8c6;
+    color: #000;
+}
+
+.message-bubble.received {
+    background: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .message-bubble {
+        max-width: 85%;
+    }
+    
+    .chat-container {
+        height: 85vh;
+    }
+}
+
+/* Auto scroll animation */
+.chat-messages {
+    scroll-behavior: smooth;
+}
+
+/* Typing indicator animation */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background: white;
+    border-radius: 18px;
+    margin-right: auto;
+    max-width: 70px;
+}
+
+.typing-indicator span {
+    height: 8px;
+    width: 8px;
+    background: #999;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 3px;
+    animation: typing 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typing {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-10px);
+    }
+}
+</style>
+
+<script>
+// Auto scroll to bottom
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    // Focus on input
+    document.getElementById('messageInput').focus();
+});
+
+// Auto scroll after sending message
+document.getElementById('messageForm').addEventListener('submit', function() {
+    setTimeout(() => {
+        const chatMessages = document.getElementById('chatMessages');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 100);
+});
+
+// Enter key to send message
+document.getElementById('messageInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        document.getElementById('messageForm').submit();
+    }
+});
+
+// Auto-refresh messages every 3 seconds
+setInterval(function() {
+    // Only refresh if page is visible
+    if (!document.hidden) {
+        location.reload();
+    }
+}, 3000);
+</script>
+{% endblock %}

@@ -1,86 +1,6 @@
-// Modern CMS JavaScript
+// Modern UI Enhancement System for BrainLow CMS
 
-// Chatbot functionality
-function toggleChatbot() {
-    const popup = document.getElementById('chatbotPopup');
-    if (popup.style.display === 'none' || popup.style.display === '') {
-        popup.style.display = 'block';
-        popup.style.animation = 'slideUp 0.3s ease';
-        document.getElementById('chatInput').focus();
-    } else {
-        popup.style.display = 'none';
-    }
-}
-
-function closeChatbot() {
-    document.getElementById('chatbotPopup').style.display = 'none';
-}
-
-function handleEnter(event) {
-    if (event.key === 'Enter') {
-        sendMessage();
-    }
-}
-
-function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const message = input.value.trim();
-    
-    if (!message) return;
-    
-    const messagesDiv = document.getElementById('chatMessages');
-    
-    // Add user message
-    messagesDiv.innerHTML += `
-        <div class="mb-2 text-end">
-            <span class="badge bg-primary">${message}</span>
-        </div>
-    `;
-    
-    input.value = '';
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    
-    // Show typing indicator
-    messagesDiv.innerHTML += `
-        <div class="mb-2" id="typing">
-            <span class="text-muted"><i class="fas fa-circle-notch fa-spin"></i> AI is typing...</span>
-        </div>
-    `;
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    
-    // Send to backend
-    fetch('/chatbot', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: message })
-    })
-    .then(response => response.json())
-    .then(data => {
-        // Remove typing indicator
-        document.getElementById('typing').remove();
-        
-        // Add AI response
-        messagesDiv.innerHTML += `
-            <div class="mb-2">
-                <span class="badge bg-light text-dark">${data.response}</span>
-            </div>
-        `;
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    })
-    .catch(error => {
-        document.getElementById('typing').remove();
-        messagesDiv.innerHTML += `
-            <div class="mb-2">
-                <span class="badge bg-danger">Sorry, I'm having trouble right now. Please try again later.</span>
-            </div>
-        `;
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
-}
-
-// Enhanced form validation
+// Form validation
 function validateForm(formId) {
     const form = document.getElementById(formId);
     const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
@@ -115,11 +35,11 @@ function enableAutoSave(formId, saveUrl) {
             })
             .then(response => {
                 if (response.ok) {
-                    showSnackbar('Changes saved automatically', 'success');
+                    showNotification('Changes saved automatically', 'success');
                 }
             })
             .catch(() => {
-                showSnackbar('Auto-save failed', 'error');
+                showNotification('Auto-save failed', 'error');
             });
         }, 2000));
     });
@@ -138,20 +58,44 @@ function debounce(func, wait) {
     };
 }
 
-// Snackbar notifications
-function showSnackbar(message, type = 'info') {
-    const snackbar = document.createElement('div');
-    snackbar.className = `snackbar show ${type}`;
-    snackbar.textContent = message;
+// Modern notification system
+function showNotification(message, type = 'info', duration = 4000) {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = `
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border: none;
+        border-radius: 12px;
+        animation: slideInRight 0.3s ease;
+    `;
     
-    document.body.appendChild(snackbar);
+    const icons = {
+        success: 'fas fa-check-circle',
+        danger: 'fas fa-exclamation-circle',
+        warning: 'fas fa-exclamation-triangle',
+        info: 'fas fa-info-circle',
+        error: 'fas fa-exclamation-circle'
+    };
+    
+    notification.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="${icons[type] || icons.info} me-2"></i>
+            <span>${message}</span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
     
     setTimeout(() => {
-        snackbar.classList.remove('show');
-        setTimeout(() => {
-            document.body.removeChild(snackbar);
-        }, 300);
-    }, 3000);
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, duration);
 }
 
 // Enhanced file upload with progress
@@ -180,16 +124,16 @@ function setupFileUpload(inputId, progressId) {
         
         xhr.addEventListener('load', () => {
             if (xhr.status === 200) {
-                showSnackbar('File uploaded successfully', 'success');
+                showNotification('File uploaded successfully', 'success');
                 progress.style.width = '100%';
             } else {
-                showSnackbar('Upload failed', 'error');
+                showNotification('Upload failed', 'error');
                 progress.style.width = '0%';
             }
         });
         
         xhr.addEventListener('error', () => {
-            showSnackbar('Upload failed', 'error');
+            showNotification('Upload failed', 'error');
             progress.style.width = '0%';
         });
         
@@ -197,27 +141,6 @@ function setupFileUpload(inputId, progressId) {
         xhr.send(formData);
     });
 }
-
-// Smooth scrolling for anchor links
-document.addEventListener('DOMContentLoaded', () => {
-    const links = document.querySelectorAll('a[href^="#"]');
-    
-    links.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            const targetId = link.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
-            
-            if (targetElement) {
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
-});
 
 // Enhanced search functionality
 function setupSearch(inputId, resultsId) {
@@ -231,6 +154,7 @@ function setupSearch(inputId, resultsId) {
         
         if (query.length < 2) {
             results.innerHTML = '';
+            results.style.display = 'none';
             return;
         }
         
@@ -241,30 +165,264 @@ function setupSearch(inputId, resultsId) {
                 
                 if (data.length === 0) {
                     results.innerHTML = '<div class="text-muted p-3">No results found</div>';
-                    return;
+                } else {
+                    data.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'search-result p-2 border-bottom cursor-pointer';
+                        div.innerHTML = `
+                            <div class="fw-bold">${item.title}</div>
+                            <div class="text-muted small">${item.description}</div>
+                        `;
+                        div.addEventListener('click', () => {
+                            window.location.href = item.url;
+                        });
+                        results.appendChild(div);
+                    });
                 }
                 
-                data.forEach(item => {
-                    const div = document.createElement('div');
-                    div.className = 'search-result p-2 border-bottom';
-                    div.innerHTML = `
-                        <div class="fw-bold">${item.title}</div>
-                        <div class="text-muted small">${item.description}</div>
-                    `;
-                    div.addEventListener('click', () => {
-                        window.location.href = item.url;
-                    });
-                    results.appendChild(div);
-                });
+                results.style.display = 'block';
             })
             .catch(() => {
                 results.innerHTML = '<div class="text-danger p-3">Search failed</div>';
+                results.style.display = 'block';
             });
     }, 300));
 }
 
+// Enhanced Chatbot functionality
+class ModernChatbot {
+    constructor() {
+        this.isOpen = false;
+        this.messages = [];
+        this.init();
+    }
+    
+    init() {
+        // Create modern chatbot UI if it doesn't exist
+        if (!document.getElementById('chatbotPopup')) {
+            this.createChatbotUI();
+        }
+        
+        this.bindEvents();
+    }
+    
+    createChatbotUI() {
+        const chatbotHTML = `
+            <div id="chatbotPopup" class="chatbot-popup" style="display: none;">
+                <div class="chatbot-header">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar bg-primary text-white me-2" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">AI Assistant</h6>
+                            <small class="text-muted">Online</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-ghost" onclick="chatbot.close()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="chatbot-messages" id="chatMessages"></div>
+                <div class="chatbot-input">
+                    <div class="input-group">
+                        <input type="text" id="chatInput" class="form-control" placeholder="Ask me anything..." onkeypress="chatbot.handleKeyPress(event)">
+                        <button class="btn btn-primary" onclick="chatbot.sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', chatbotHTML);
+        
+        // Add styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .chatbot-popup {
+                position: fixed;
+                bottom: 90px;
+                right: 20px;
+                width: 380px;
+                height: 500px;
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+                z-index: 1001;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                border: 1px solid var(--gray-200);
+            }
+            
+            .chatbot-header {
+                padding: 16px;
+                background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+                color: white;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .chatbot-messages {
+                flex: 1;
+                padding: 16px;
+                overflow-y: auto;
+                background: var(--gray-50);
+            }
+            
+            .chatbot-input {
+                padding: 16px;
+                border-top: 1px solid var(--gray-200);
+                background: white;
+            }
+            
+            .message {
+                margin-bottom: 12px;
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .message.user {
+                flex-direction: row-reverse;
+            }
+            
+            .message-bubble {
+                max-width: 80%;
+                padding: 8px 12px;
+                border-radius: 12px;
+                font-size: 0.875rem;
+                line-height: 1.4;
+            }
+            
+            .message.user .message-bubble {
+                background: var(--primary-600);
+                color: white;
+                border-bottom-right-radius: 4px;
+            }
+            
+            .message.bot .message-bubble {
+                background: white;
+                color: var(--gray-800);
+                border: 1px solid var(--gray-200);
+                border-bottom-left-radius: 4px;
+            }
+            
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .chatbot-popup {
+                    width: calc(100vw - 40px);
+                    height: calc(100vh - 140px);
+                    right: 20px;
+                    bottom: 90px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    bindEvents() {
+        // Initialize with welcome message
+        this.addMessage('Hello! I\'m your AI assistant. How can I help you today?', 'bot');
+    }
+    
+    toggle() {
+        if (this.isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+    
+    open() {
+        const popup = document.getElementById('chatbotPopup');
+        popup.style.display = 'flex';
+        this.isOpen = true;
+        document.getElementById('chatInput').focus();
+    }
+    
+    close() {
+        const popup = document.getElementById('chatbotPopup');
+        popup.style.display = 'none';
+        this.isOpen = false;
+    }
+    
+    handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            this.sendMessage();
+        }
+    }
+    
+    addMessage(content, sender) {
+        const messagesContainer = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}`;
+        
+        messageDiv.innerHTML = `
+            <div class="message-bubble">
+                ${content}
+            </div>
+        `;
+        
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    sendMessage() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        // Add user message
+        this.addMessage(message, 'user');
+        input.value = '';
+        
+        // Add typing indicator
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message bot';
+        typingDiv.id = 'typing-indicator';
+        typingDiv.innerHTML = `
+            <div class="message-bubble">
+                <i class="fas fa-spinner fa-spin me-1"></i> Thinking...
+            </div>
+        `;
+        document.getElementById('chatMessages').appendChild(typingDiv);
+        
+        // Send to backend
+        fetch('/chatbot', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message: message})
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('typing-indicator')?.remove();
+            this.addMessage(data.response || 'Sorry, I couldn\'t process that request.', 'bot');
+        })
+        .catch(error => {
+            document.getElementById('typing-indicator')?.remove();
+            this.addMessage('Sorry, I\'m having trouble right now. Please try again later.', 'bot');
+        });
+    }
+}
+
+// Initialize chatbot
+let chatbot;
+
 // Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', function(e) {
     // Ctrl/Cmd + K for search
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
@@ -276,39 +434,163 @@ document.addEventListener('keydown', (e) => {
     
     // Escape to close modals/popups
     if (e.key === 'Escape') {
-        const chatbot = document.getElementById('chatbotPopup');
-        if (chatbot && chatbot.style.display !== 'none') {
-            closeChatbot();
+        const openModal = document.querySelector('.modal.show');
+        if (openModal) {
+            const modal = bootstrap.Modal.getInstance(openModal);
+            if (modal) modal.hide();
+        }
+        
+        if (chatbot && chatbot.isOpen) {
+            chatbot.close();
         }
     }
 });
 
-// Initialize tooltips and popovers
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Bootstrap tooltips
+// Modern UI Enhancements
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize chatbot for students
+    if (document.querySelector('.chatbot-float')) {
+        chatbot = new ModernChatbot();
+    }
+    
+    // Add smooth scrolling to all anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+    
+    // Add loading states to buttons
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn && !submitBtn.disabled) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Loading...';
+                submitBtn.disabled = true;
+                
+                // Re-enable after 5 seconds as fallback
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 5000);
+            }
+        });
+    });
+    
+    // Add hover effects to cards
+    document.querySelectorAll('.card, .course-card').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(tooltipTriggerEl => {
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
     
-    // Initialize Bootstrap popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    popoverTriggerList.map(popoverTriggerEl => {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-});
-
-// Auto-dismiss alerts
-document.addEventListener('DOMContentLoaded', () => {
-    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-    
-    alerts.forEach(alert => {
+    // Auto-dismiss alerts
+    document.querySelectorAll('.alert:not(.alert-permanent)').forEach(alert => {
         setTimeout(() => {
             const bsAlert = new bootstrap.Alert(alert);
             bsAlert.close();
         }, 5000);
     });
+    
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(e) {
+        const searchContainer = e.target.closest('.search-container');
+        if (!searchContainer) {
+            document.querySelectorAll('.search-results').forEach(results => {
+                results.style.display = 'none';
+            });
+        }
+    });
 });
+
+// Legacy functions for compatibility
+function toggleChatbot() {
+    if (chatbot) chatbot.toggle();
+}
+
+function closeChatbot() {
+    if (chatbot) chatbot.close();
+}
+
+function handleEnter(event) {
+    if (chatbot) chatbot.handleKeyPress(event);
+}
+
+function sendMessage() {
+    if (chatbot) chatbot.sendMessage();
+}
+
+// Enhanced form handling
+function handleFormSubmit(form, options = {}) {
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn?.innerHTML;
+    
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        submitBtn.disabled = true;
+    }
+    
+    fetch(form.action || window.location.href, {
+        method: form.method || 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            if (options.successMessage) {
+                showNotification(options.successMessage, 'success');
+            }
+            if (options.redirect) {
+                window.location.href = options.redirect;
+            } else if (options.reload) {
+                window.location.reload();
+            }
+        } else {
+            throw new Error('Form submission failed');
+        }
+    })
+    .catch(error => {
+        showNotification(options.errorMessage || 'An error occurred', 'danger');
+    })
+    .finally(() => {
+        if (submitBtn) {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+// Utility functions
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    };
+}
 
 // Loading states for buttons
 function setButtonLoading(buttonId, loading = true) {
@@ -323,60 +605,3 @@ function setButtonLoading(buttonId, loading = true) {
         button.innerHTML = button.getAttribute('data-original-text') || 'Submit';
     }
 }
-
-// Form submission with loading state
-document.addEventListener('DOMContentLoaded', () => {
-    const forms = document.querySelectorAll('form[data-loading]');
-    
-    forms.forEach(form => {
-        form.addEventListener('submit', (e) => {
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton) {
-                submitButton.setAttribute('data-original-text', submitButton.innerHTML);
-                setButtonLoading(submitButton.id || 'submit-btn', true);
-            }
-        });
-    });
-});
-
-// CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideUp {
-        from {
-            transform: translateY(20px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    .search-result {
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-    }
-    
-    .search-result:hover {
-        background-color: var(--hover-color);
-    }
-    
-    .snackbar {
-        animation: slideUp 0.3s ease;
-    }
-    
-    .snackbar.success {
-        background-color: var(--secondary-color);
-    }
-    
-    .snackbar.error {
-        background-color: var(--accent-color);
-    }
-`;
-document.head.appendChild(style);

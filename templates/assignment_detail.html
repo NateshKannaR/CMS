@@ -1,82 +1,276 @@
-{% extends "base.html" %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=assignment.course_id) }}">Course</a></li>
-<li class="breadcrumb-item active">{{ assignment.title }}</li>
-{% endblock %}
-
-{% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h2><i class="fas fa-tasks"></i> {{ assignment.title }}</h2>
-        <p>{{ assignment.description }}</p>
-        <p><strong>Due Date:</strong> {{ assignment.due_date }}</p>
-        <p><strong>Maximum Points:</strong> {{ assignment.max_points }}</p>
-        
-        {% if session.role == 'student' %}
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-upload"></i> Submit Assignment</h5>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ assignment.title }} - BrainLow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <span>BrainLow</span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="nav-link me-3">{{ session.full_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
             </div>
-            <div class="card-body">
-                {% if submission %}
-                <div class="alert alert-info">
-                    <strong>Submitted:</strong> {{ submission.submitted_at }}
-                    {% if submission.grade %}
-                    <br><strong>Grade:</strong> {{ submission.grade }}/{{ assignment.max_points }}
-                    {% endif %}
-                    {% if submission.feedback %}
-                    <br><strong>Feedback:</strong> {{ submission.feedback }}
-                    {% endif %}
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=assignment.course_id) }}">Course</a></li>
+                <li class="breadcrumb-item active">{{ assignment.title }}</li>
+            </ol>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="assignment-header mb-4">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center">
+                        <div class="assignment-icon me-3">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div>
+                            <h2 class="mb-1">{{ assignment.title }}</h2>
+                            <div class="assignment-meta">
+                                <span class="me-3">
+                                    <i class="fas fa-calendar me-1"></i>Due: {{ assignment.due_date }}
+                                </span>
+                                <span class="me-3">
+                                    <i class="fas fa-star me-1"></i>{{ assignment.max_points }} points
+                                </span>
+                                {% if session.role == 'student' and submission %}
+                                <span class="badge badge-success">Submitted</span>
+                                {% elif session.role == 'student' %}
+                                <span class="badge badge-warning">Pending</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Assignment Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ assignment.description or 'No description provided' }}</p>
+                    </div>
+                </div>
+                
+                {% if session.role == 'student' %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>
+                            {% if submission %}Your Submission{% else %}Submit Assignment{% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if submission %}
+                            <div class="submission-status mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge badge-success">Submitted</span>
+                                        <small class="text-muted ms-2">{{ submission.submitted_at.strftime('%B %d, %Y at %I:%M %p') if submission.submitted_at else 'Unknown' }}</small>
+                                    </div>
+                                    {% if submission.grade %}
+                                    <div class="grade-display">
+                                        <span class="grade-score">{{ submission.grade }}/{{ assignment.max_points }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="submission-content">
+                                <h6>Your Submission:</h6>
+                                <div class="submission-text">{{ submission.content }}</div>
+                                {% if submission.file_path %}
+                                <div class="mt-2">
+                                    <i class="fas fa-paperclip me-1"></i>
+                                    <a href="#" class="text-decoration-none">Attached File</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            {% if submission.feedback %}
+                            <div class="feedback-section mt-3">
+                                <h6>Teacher Feedback:</h6>
+                                <div class="feedback-content">{{ submission.feedback }}</div>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <form method="POST" action="{{ url_for('submit_assignment', assignment_id=assignment._id) }}" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">Submission Text</label>
+                                    <textarea class="form-control" name="content" rows="6" placeholder="Enter your assignment submission here..." required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Upload File (Optional)</label>
+                                    <input type="file" class="form-control" name="file" accept=".pdf,.doc,.docx,.txt,.jpg,.png">
+                                    <div class="form-text">Supported formats: PDF, DOC, TXT, Images</div>
+                                </div>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Assignment
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endif %}
-                
-                <form method="POST" action="{{ url_for('submit_assignment', assignment_id=assignment._id) }}" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label for="content" class="form-label">Submission Text</label>
-                        <textarea class="form-control" id="content" name="content" rows="5">{{ submission.content if submission else '' }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="file" class="form-label">Upload File (Optional)</label>
-                        <input type="file" class="form-control" id="file" name="file">
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> {{ 'Update Submission' if submission else 'Submit Assignment' }}
-                    </button>
-                </form>
             </div>
-        </div>
-        {% endif %}
-        
-        {% if session.role == 'teacher' %}
-        <h3><i class="fas fa-list"></i> Submissions</h3>
-        {% for sub in submissions %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">{{ sub.student[0].full_name if sub.student else 'Unknown Student' }}</h5>
-                <p><strong>Submitted:</strong> {{ sub.submitted_at }}</p>
-                <p>{{ sub.content }}</p>
-                {% if sub.file_path %}
-                <p><strong>File:</strong> <a href="{{ sub.file_path }}" target="_blank">Download</a></p>
+            
+            <div class="col-md-4">
+                {% if session.role == 'teacher' %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-users me-2"></i>Student Submissions</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if submissions %}
+                            {% for submission in submissions %}
+                            <div class="submission-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar avatar-sm me-2">
+                                        {{ submission.student[0].full_name[0].upper() if submission.student else 'U' }}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0">{{ submission.student[0].full_name if submission.student else 'Unknown' }}</h6>
+                                        <small class="text-muted">{{ submission.submitted_at.strftime('%m/%d/%Y') if submission.submitted_at else 'Unknown' }}</small>
+                                    </div>
+                                </div>
+                                
+                                <form method="POST" action="{{ url_for('grade_submission', submission_id=submission._id) }}" class="grading-form">
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <input type="number" class="form-control form-control-sm" name="grade" 
+                                                   placeholder="Grade" value="{{ submission.grade or '' }}" 
+                                                   max="{{ assignment.max_points }}" min="0">
+                                        </div>
+                                        <div class="col-6">
+                                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                                <i class="fas fa-check me-1"></i>Grade
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <textarea class="form-control form-control-sm" name="feedback" 
+                                              placeholder="Feedback for student..." rows="2">{{ submission.feedback or '' }}</textarea>
+                                </form>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                <p>No submissions yet</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Assignment Info</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-item">
+                            <strong>Due Date:</strong><br>
+                            <span class="text-muted">{{ assignment.due_date }}</span>
+                        </div>
+                        <div class="info-item">
+                            <strong>Points:</strong><br>
+                            <span class="text-muted">{{ assignment.max_points }} points</span>
+                        </div>
+                        {% if submission %}
+                        <div class="info-item">
+                            <strong>Status:</strong><br>
+                            <span class="badge badge-success">Submitted</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
                 {% endif %}
-                
-                <form method="POST" action="{{ url_for('grade_submission', submission_id=sub._id) }}" class="mt-3">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <input type="number" class="form-control" name="grade" placeholder="Grade" value="{{ sub.grade if sub.grade else '' }}" max="{{ assignment.max_points }}">
-                        </div>
-                        <div class="col-md-6">
-                            <input type="text" class="form-control" name="feedback" placeholder="Feedback" value="{{ sub.feedback if sub.feedback else '' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <button type="submit" class="btn btn-success btn-sm">Grade</button>
-                        </div>
-                    </div>
-                </form>
             </div>
         </div>
-        {% endfor %}
-        {% endif %}
     </div>
-</div>
-{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <style>
+    .assignment-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+    }
+    
+    .assignment-meta {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .submission-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .submission-item:last-child {
+        border-bottom: none;
+    }
+    
+    .grade-score {
+        font-size: 18px;
+        font-weight: 600;
+        color: #28a745;
+    }
+    
+    .submission-text {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+    }
+    
+    .feedback-content {
+        background: #fff3cd;
+        padding: 12px;
+        border-radius: 8px;
+        border-left: 4px solid #ffc107;
+    }
+    
+    .info-item {
+        margin-bottom: 15px;
+    }
+    </style>
+</body>
+</html>

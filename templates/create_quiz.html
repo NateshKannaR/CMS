@@ -1,156 +1,894 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Quiz - BrainLow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <span>BrainLow</span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="nav-link me-3">{{ session.full_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
 
-{% block breadcrumb %}
-<li class="breadcrumb-item active">Create Quiz</li>
-{% endblock %}
+    <div class="container mt-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Create Quiz</li>
+            </ol>
+        </nav>
 
-{% block content %}
-<div class="container">
-    <h2><i class="fas fa-question-circle"></i> Create Quiz</h2>
-    
-    <form method="POST" id="quizForm">
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Quiz Title</label>
-                    <input type="text" class="form-control" name="title" required>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Enhanced Header -->
+        <div class="quiz-header mb-5">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="quiz-icon me-3">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-1 fw-bold text-gradient">Create Interactive Quiz</h2>
+                        <p class="text-muted mb-0">🧠 Design engaging quizzes for your students</p>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Max Participants</label>
-                    <input type="number" class="form-control" name="max_participants" value="50" min="1" max="100" required>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Time per Question (seconds)</label>
-                    <input type="number" class="form-control" name="question_time" value="30" min="10" max="300" required>
+                <div class="quiz-progress">
+                    <div class="progress-card">
+                        <div class="progress-number">
+                            <span id="questionCounter">1</span><span class="total">/50</span>
+                        </div>
+                        <div class="progress-label">Questions</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div id="questionsContainer">
-            <div class="card mb-3 question-card">
-                <div class="card-header d-flex justify-content-between">
-                    <h6>Question 1</h6>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
+        
+        <form method="POST" id="quizForm">
+            <!-- Enhanced Quiz Settings -->
+            <div class="card quiz-settings-card mb-4">
+                <div class="card-header">
+                    <div class="d-flex align-items-center">
+                        <div class="settings-icon me-3">
+                            <i class="fas fa-cog"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold">Quiz Configuration</h5>
+                            <small class="text-muted">Set up your quiz parameters</small>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Question</label>
-                        <input type="text" class="form-control" name="question_0" required>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Option A</label>
-                            <input type="text" class="form-control" name="option_0_0" required>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-heading me-2 text-primary"></i>Quiz Title
+                                </label>
+                                <input type="text" class="form-control enhanced-input" name="title" 
+                                       placeholder="🏆 Enter an engaging quiz title" required>
+                                <div class="form-text">
+                                    <i class="fas fa-lightbulb me-1"></i>Make it catchy and descriptive
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Option B</label>
-                            <input type="text" class="form-control" name="option_0_1" required>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-users me-2 text-success"></i>Max Participants
+                                </label>
+                                <div class="input-with-slider">
+                                    <input type="range" class="form-range" id="participantsRange" 
+                                           min="1" max="100" value="50" oninput="updateParticipants(this.value)">
+                                    <input type="number" class="form-control enhanced-input" name="max_participants" 
+                                           value="50" min="1" max="100" id="participantsInput" required>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Recommended: 20-50 students
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Option C</label>
-                            <input type="text" class="form-control" name="option_0_2" required>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-clock me-2 text-warning"></i>Time per Question
+                                </label>
+                                <div class="time-selector">
+                                    <div class="time-options mb-2">
+                                        <button type="button" class="time-btn" data-time="15">15s</button>
+                                        <button type="button" class="time-btn active" data-time="30">30s</button>
+                                        <button type="button" class="time-btn" data-time="60">1m</button>
+                                        <button type="button" class="time-btn" data-time="120">2m</button>
+                                    </div>
+                                    <input type="number" class="form-control enhanced-input" name="question_time" 
+                                           value="30" min="10" max="300" id="timeInput" required>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-stopwatch me-1"></i>Balance difficulty and time
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label">Option D</label>
-                            <input type="text" class="form-control" name="option_0_3" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Correct Answer</label>
-                        <select class="form-control" name="correct_0" required>
-                            <option value="0">A</option>
-                            <option value="1">B</option>
-                            <option value="2">C</option>
-                            <option value="3">D</option>
-                        </select>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="mb-3">
-            <button type="button" class="btn btn-secondary" onclick="addQuestion()" id="addQuestionBtn">Add Question</button>
-            <button type="submit" class="btn btn-success">Create Quiz</button>
-            <small class="text-muted ms-3">Questions: <span id="questionCounter">1</span>/50</small>
-        </div>
-    </form>
-</div>
+            <!-- Enhanced Questions Container -->
+            <div id="questionsContainer">
+                <div class="card mb-4 question-card enhanced-question" data-question="1">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="question-number me-3">
+                                    <span>1</span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Question 1</h6>
+                                    <small class="text-muted">Multiple Choice</small>
+                                </div>
+                            </div>
+                            <div class="question-actions">
+                                <button type="button" class="btn btn-ghost btn-sm me-2" title="Duplicate">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(this)" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-question-circle me-2 text-primary"></i>Question Text
+                            </label>
+                            <textarea class="form-control enhanced-textarea" name="question_0" rows="3"
+                                    placeholder="❓ Enter your question here..." required></textarea>
+                            <div class="form-text">
+                                <i class="fas fa-lightbulb me-1"></i>Make it clear and specific
+                            </div>
+                        </div>
+                        
+                        <div class="options-container">
+                            <label class="form-label fw-semibold mb-3">
+                                <i class="fas fa-list me-2 text-success"></i>Answer Options
+                            </label>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="option-group">
+                                        <div class="option-header">
+                                            <span class="option-letter">A</span>
+                                            <input type="radio" name="correct_0" value="0" class="correct-radio">
+                                        </div>
+                                        <input type="text" class="form-control option-input" name="option_0_0" 
+                                               placeholder="Enter option A" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="option-group">
+                                        <div class="option-header">
+                                            <span class="option-letter">B</span>
+                                            <input type="radio" name="correct_0" value="1" class="correct-radio">
+                                        </div>
+                                        <input type="text" class="form-control option-input" name="option_0_1" 
+                                               placeholder="Enter option B" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="option-group">
+                                        <div class="option-header">
+                                            <span class="option-letter">C</span>
+                                            <input type="radio" name="correct_0" value="2" class="correct-radio">
+                                        </div>
+                                        <input type="text" class="form-control option-input" name="option_0_2" 
+                                               placeholder="Enter option C" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="option-group">
+                                        <div class="option-header">
+                                            <span class="option-letter">D</span>
+                                            <input type="radio" name="correct_0" value="3" class="correct-radio">
+                                        </div>
+                                        <input type="text" class="form-control option-input" name="option_0_3" 
+                                               placeholder="Enter option D" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="correct-answer-hint mt-3">
+                                <i class="fas fa-info-circle text-info me-2"></i>
+                                <small class="text-muted">Click the radio button next to the correct answer</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-<script>
-let questionCount = 1;
-const MAX_QUESTIONS = 50;
+            <!-- Enhanced Actions -->
+            <div class="quiz-actions mb-5">
+                <div class="d-flex flex-wrap gap-3 justify-content-center">
+                    <button type="button" class="btn btn-outline-primary btn-lg" onclick="addQuestion()" id="addQuestionBtn">
+                        <i class="fas fa-plus me-2"></i>Add Question
+                    </button>
+                    <button type="button" class="btn btn-outline-info btn-lg" onclick="previewQuiz()">
+                        <i class="fas fa-eye me-2"></i>Preview Quiz
+                    </button>
+                    <button type="submit" class="btn btn-success btn-lg create-quiz-btn">
+                        <span class="btn-text">
+                            <i class="fas fa-rocket me-2"></i>Create Quiz
+                        </span>
+                        <span class="btn-loading d-none">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Creating...
+                        </span>
+                    </button>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
 
-function addQuestion() {
-    if (questionCount >= MAX_QUESTIONS) {
-        alert('Maximum 50 questions allowed');
-        return;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+    /* Enhanced Quiz Creation UI Styles */
+    .quiz-header {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.2);
+        border-radius: 20px;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
     }
     
-    const container = document.getElementById('questionsContainer');
-    const questionHtml = `
-        <div class="card mb-3 question-card">
-            <div class="card-header d-flex justify-content-between">
-                <h6>Question ${questionCount + 1}</h6>
-                <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestion(this)">Remove</button>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Question</label>
-                    <input type="text" class="form-control" name="question_${questionCount}" required>
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-2">
-                        <label class="form-label">Option A</label>
-                        <input type="text" class="form-control" name="option_${questionCount}_0" required>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <label class="form-label">Option B</label>
-                        <input type="text" class="form-control" name="option_${questionCount}_1" required>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <label class="form-label">Option C</label>
-                        <input type="text" class="form-control" name="option_${questionCount}_2" required>
-                    </div>
-                    <div class="col-md-6 mb-2">
-                        <label class="form-label">Option D</label>
-                        <input type="text" class="form-control" name="option_${questionCount}_3" required>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Correct Answer</label>
-                    <select class="form-control" name="correct_${questionCount}" required>
-                        <option value="0">A</option>
-                        <option value="1">B</option>
-                        <option value="2">C</option>
-                        <option value="3">D</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    `;
-    container.insertAdjacentHTML('beforeend', questionHtml);
-    questionCount++;
-    updateCounter();
-}
+    .quiz-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #f59e0b, #d97706, #92400e);
+    }
+    
+    .quiz-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.5rem;
+        box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        animation: pulse 2s infinite;
+    }
+    
+    .quiz-progress {
+        text-align: center;
+    }
+    
+    .progress-card {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        min-width: 120px;
+    }
+    
+    .progress-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #f59e0b;
+    }
+    
+    .progress-number .total {
+        color: #94a3b8;
+        font-size: 1rem;
+    }
+    
+    .progress-label {
+        font-size: 0.8rem;
+        color: #64748b;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .progress-bar-container {
+        width: 100%;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+        border-radius: 3px;
+        transition: width 0.3s ease;
+        width: 2%;
+    }
+    
+    .quiz-settings-card {
+        border: 2px solid rgba(245, 158, 11, 0.1);
+        box-shadow: 0 10px 30px rgba(245, 158, 11, 0.1);
+    }
+    
+    .settings-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1rem;
+    }
+    
+    .enhanced-input {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 16px;
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        transition: all 0.3s ease;
+    }
+    
+    .enhanced-input:focus {
+        border-color: #f59e0b;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
+        background: #ffffff;
+    }
+    
+    .input-with-slider {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .form-range {
+        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    }
+    
+    .form-range::-webkit-slider-thumb {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    
+    .time-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .time-options {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .time-btn {
+        padding: 8px 16px;
+        border: 2px solid #e2e8f0;
+        background: #ffffff;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .time-btn:hover {
+        border-color: #f59e0b;
+        background: rgba(245, 158, 11, 0.1);
+    }
+    
+    .time-btn.active {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        border-color: #f59e0b;
+    }
+    
+    .enhanced-question {
+        border: 2px solid rgba(103, 126, 234, 0.1);
+        box-shadow: 0 8px 25px rgba(103, 126, 234, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .enhanced-question::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    
+    .enhanced-question:hover {
+        border-color: rgba(103, 126, 234, 0.2);
+        box-shadow: 0 12px 35px rgba(103, 126, 234, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .question-number {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    
+    .question-actions .btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .enhanced-textarea {
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px;
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        transition: all 0.3s ease;
+        resize: vertical;
+        min-height: 80px;
+    }
+    
+    .enhanced-textarea:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(103, 126, 234, 0.1);
+        background: #ffffff;
+    }
+    
+    .options-container {
+        background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 15px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .option-group {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .option-group:hover {
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(103, 126, 234, 0.1);
+    }
+    
+    .option-group.correct {
+        border-color: #10b981;
+        background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%);
+    }
+    
+    .option-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    
+    .option-letter {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.9rem;
+    }
+    
+    .correct-radio {
+        width: 20px;
+        height: 20px;
+        accent-color: #10b981;
+    }
+    
+    .option-input {
+        border: none;
+        background: transparent;
+        padding: 8px 12px;
+        flex: 1;
+    }
+    
+    .option-input:focus {
+        outline: none;
+        background: rgba(103, 126, 234, 0.05);
+        border-radius: 8px;
+    }
+    
+    .correct-answer-hint {
+        text-align: center;
+        padding: 12px;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 8px;
+        border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+    
+    .quiz-actions {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid #cbd5e1;
+    }
+    
+    .create-quiz-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border: none;
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .create-quiz-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+    }
+    
+    /* Animation for adding questions */
+    .question-card {
+        animation: slideInUp 0.5s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .quiz-header {
+            padding: 1.5rem;
+        }
+        
+        .quiz-progress {
+            margin-top: 1rem;
+        }
+        
+        .time-options {
+            justify-content: center;
+        }
+        
+        .quiz-actions .d-flex {
+            flex-direction: column;
+        }
+        
+        .quiz-actions .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
+    </style>
 
-function removeQuestion(button) {
-    if (document.querySelectorAll('.question-card').length > 1) {
-        button.closest('.question-card').remove();
-        questionCount--;
+    <script>
+    let questionCount = 1;
+    const MAX_QUESTIONS = 50;
+
+    // Enhanced add question function
+    function addQuestion() {
+        if (questionCount >= MAX_QUESTIONS) {
+            showAlert('Maximum 50 questions allowed', 'warning');
+            return;
+        }
+        
+        const container = document.getElementById('questionsContainer');
+        const questionHtml = `
+            <div class="card mb-4 question-card enhanced-question" data-question="${questionCount + 1}">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="question-number me-3">
+                                <span>${questionCount + 1}</span>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Question ${questionCount + 1}</h6>
+                                <small class="text-muted">Multiple Choice</small>
+                            </div>
+                        </div>
+                        <div class="question-actions">
+                            <button type="button" class="btn btn-ghost btn-sm me-2" title="Duplicate">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeQuestion(this)" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-question-circle me-2 text-primary"></i>Question Text
+                        </label>
+                        <textarea class="form-control enhanced-textarea" name="question_${questionCount}" rows="3"
+                                placeholder="⁉️ Enter your question here..." required></textarea>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1"></i>Make it clear and specific
+                        </div>
+                    </div>
+                    
+                    <div class="options-container">
+                        <label class="form-label fw-semibold mb-3">
+                            <i class="fas fa-list me-2 text-success"></i>Answer Options
+                        </label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="option-group">
+                                    <div class="option-header">
+                                        <span class="option-letter">A</span>
+                                        <input type="radio" name="correct_${questionCount}" value="0" class="correct-radio">
+                                    </div>
+                                    <input type="text" class="form-control option-input" name="option_${questionCount}_0" 
+                                           placeholder="Enter option A" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="option-group">
+                                    <div class="option-header">
+                                        <span class="option-letter">B</span>
+                                        <input type="radio" name="correct_${questionCount}" value="1" class="correct-radio">
+                                    </div>
+                                    <input type="text" class="form-control option-input" name="option_${questionCount}_1" 
+                                           placeholder="Enter option B" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="option-group">
+                                    <div class="option-header">
+                                        <span class="option-letter">C</span>
+                                        <input type="radio" name="correct_${questionCount}" value="2" class="correct-radio">
+                                    </div>
+                                    <input type="text" class="form-control option-input" name="option_${questionCount}_2" 
+                                           placeholder="Enter option C" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="option-group">
+                                    <div class="option-header">
+                                        <span class="option-letter">D</span>
+                                        <input type="radio" name="correct_${questionCount}" value="3" class="correct-radio">
+                                    </div>
+                                    <input type="text" class="form-control option-input" name="option_${questionCount}_3" 
+                                           placeholder="Enter option D" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="correct-answer-hint mt-3">
+                            <i class="fas fa-info-circle text-info me-2"></i>
+                            <small class="text-muted">Click the radio button next to the correct answer</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', questionHtml);
+        questionCount++;
         updateCounter();
+        updateProgressBar();
+        
+        // Scroll to new question
+        setTimeout(() => {
+            const newQuestion = container.lastElementChild;
+            newQuestion.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
     }
-}
 
-function updateCounter() {
-    document.getElementById('questionCounter').textContent = questionCount;
-    const addBtn = document.getElementById('addQuestionBtn');
-    if (questionCount >= MAX_QUESTIONS) {
-        addBtn.disabled = true;
-        addBtn.textContent = 'Max Questions Reached';
-    } else {
-        addBtn.disabled = false;
-        addBtn.textContent = 'Add Question';
+    function removeQuestion(button) {
+        const questions = document.querySelectorAll('.question-card');
+        if (questions.length > 1) {
+            const questionCard = button.closest('.question-card');
+            questionCard.style.animation = 'slideOutUp 0.3s ease-in';
+            
+            setTimeout(() => {
+                questionCard.remove();
+                questionCount--;
+                updateCounter();
+                updateProgressBar();
+                renumberQuestions();
+            }, 300);
+        } else {
+            showAlert('At least one question is required', 'warning');
+        }
     }
-}
-</script>
-{% endblock %}
+
+    function renumberQuestions() {
+        const questions = document.querySelectorAll('.question-card');
+        questions.forEach((card, index) => {
+            const questionNumber = card.querySelector('.question-number span');
+            const questionTitle = card.querySelector('h6');
+            
+            questionNumber.textContent = index + 1;
+            questionTitle.textContent = `Question ${index + 1}`;
+            card.setAttribute('data-question', index + 1);
+        });
+    }
+
+    function updateCounter() {
+        document.getElementById('questionCounter').textContent = questionCount;
+        const addBtn = document.getElementById('addQuestionBtn');
+        
+        if (questionCount >= MAX_QUESTIONS) {
+            addBtn.disabled = true;
+            addBtn.innerHTML = '<i class="fas fa-exclamation me-2"></i>Max Questions Reached';
+            addBtn.classList.add('btn-outline-warning');
+            addBtn.classList.remove('btn-outline-primary');
+        } else {
+            addBtn.disabled = false;
+            addBtn.innerHTML = '<i class="fas fa-plus me-2"></i>Add Question';
+            addBtn.classList.add('btn-outline-primary');
+            addBtn.classList.remove('btn-outline-warning');
+        }
+    }
+    
+    function updateProgressBar() {
+        const progressBar = document.getElementById('progressBar');
+        const percentage = (questionCount / MAX_QUESTIONS) * 100;
+        progressBar.style.width = `${Math.max(percentage, 2)}%`;
+    }
+    
+    // Participants slider functionality
+    function updateParticipants(value) {
+        document.getElementById('participantsInput').value = value;
+    }
+    
+    // Time selector functionality
+    function setupTimeSelector() {
+        const timeButtons = document.querySelectorAll('.time-btn');
+        const timeInput = document.getElementById('timeInput');
+        
+        timeButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                timeButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                timeInput.value = this.dataset.time;
+            });
+        });
+    }
+    
+    // Preview quiz functionality
+    function previewQuiz() {
+        const title = document.querySelector('input[name="title"]').value;
+        if (!title.trim()) {
+            showAlert('Please enter a quiz title first', 'warning');
+            return;
+        }
+        
+        showAlert('Quiz preview feature coming soon!', 'info');
+    }
+    
+    // Show alert function
+    function showAlert(message, type) {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // Correct answer selection
+    function setupCorrectAnswerSelection() {
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('correct-radio')) {
+                const optionGroups = e.target.closest('.options-container').querySelectorAll('.option-group');
+                optionGroups.forEach(group => group.classList.remove('correct'));
+                e.target.closest('.option-group').classList.add('correct');
+            }
+        });
+    }
+    
+    // Form submission enhancement
+    function setupFormSubmission() {
+        document.getElementById('quizForm').addEventListener('submit', function(e) {
+            const btn = document.querySelector('.create-quiz-btn');
+            const btnText = btn.querySelector('.btn-text');
+            const btnLoading = btn.querySelector('.btn-loading');
+            
+            btnText.classList.add('d-none');
+            btnLoading.classList.remove('d-none');
+            btn.disabled = true;
+        });
+    }
+    
+    // Initialize everything
+    document.addEventListener('DOMContentLoaded', function() {
+        setupTimeSelector();
+        setupCorrectAnswerSelection();
+        setupFormSubmission();
+        updateProgressBar();
+        
+        // Sync participants input and range
+        const participantsInput = document.getElementById('participantsInput');
+        const participantsRange = document.getElementById('participantsRange');
+        
+        participantsInput.addEventListener('input', function() {
+            participantsRange.value = this.value;
+        });
+    });
+    
+    // Add slide out animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideOutUp {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    </script>
+</body>
+</html>

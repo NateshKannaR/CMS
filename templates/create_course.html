@@ -1,31 +1,81 @@
 {% extends "base.html" %}
 
+{% block title %}Create Course - BrainLow{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h3><i class="fas fa-plus"></i> Create New Course</h3>
+
+    <!-- Enhanced Header -->
+    <div class="glass rounded-3xl p-4 mb-5 fade-in" style="background: linear-gradient(135deg, rgba(103, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="h2 fw-bold mb-2">
+                    <span class="text-gradient">Create New Course</span>
+                    <span class="ms-2">📚</span>
+                </h1>
+                <p class="text-muted mb-0">Set up a new course for your students</p>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
-                        <label for="name" class="form-label">Course Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" rows="4"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="course_code" class="form-label">Course Code</label>
-                        <input type="text" class="form-control" id="course_code" name="course_code" required>
-                    </div>
-                    <button type="submit" class="btn btn-success">Create Course</button>
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
-                </form>
+            <div class="d-none d-md-block">
+                <div class="p-3 rounded-circle" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="fas fa-plus-circle fa-2x text-white"></i>
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
+                <div class="card border-0 shadow-lg" style="border-radius: 1rem; overflow: hidden;">
+                    <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                        <h4 class="mb-0 text-white fw-bold"><i class="fas fa-graduation-cap me-2"></i>Course Details</h4>
+                    </div>
+                    <div class="card-body p-4" style="background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);">
+                        <form method="POST">
+                            <div class="mb-4">
+                                <label for="name" class="form-label fw-semibold">
+                                    <i class="fas fa-book me-2 text-primary"></i>Course Name
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="name" name="name" placeholder="e.g. Introduction to Computer Science" required style="border-radius: 10px; border: 2px solid #e2e8f0;">
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="course_code" class="form-label fw-semibold">
+                                    <i class="fas fa-code me-2 text-primary"></i>Course Code
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="course_code" name="course_code" placeholder="e.g. CS101" required style="border-radius: 10px; border: 2px solid #e2e8f0;">
+                                <div class="form-text"><i class="fas fa-info-circle me-1"></i>Students will use this code to join your course</div>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label for="description" class="form-label fw-semibold">
+                                    <i class="fas fa-align-left me-2 text-primary"></i>Description
+                                </label>
+                                <textarea class="form-control" id="description" name="description" rows="4" placeholder="Describe what students will learn in this course..." style="border-radius: 10px; border: 2px solid #e2e8f0;"></textarea>
+                            </div>
+                            
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-primary btn-lg shadow-colored flex-fill" style="border-radius: 10px;">
+                                    <i class="fas fa-plus me-2"></i>Create Course
+                                </button>
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-lg flex-fill" style="border-radius: 10px;">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}

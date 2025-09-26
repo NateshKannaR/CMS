@@ -1,66 +1,266 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - BrainLow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css' rel='stylesheet' />
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <span>BrainLow</span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="nav-link me-3">{{ session.full_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
 
-{% block breadcrumb %}
-<li class="breadcrumb-item active">Calendar</li>
-{% endblock %}
+    <div class="container-fluid mt-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Calendar</li>
+            </ol>
+        </nav>
 
-{% block content %}
-<div class="container">
-    <h2><i class="fas fa-calendar"></i> Academic Calendar</h2>
-    
-    <div class="row">
-        <div class="col-md-8">
-            <div id="calendar"></div>
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-calendar me-2 text-primary"></i>
+                <h2 class="mb-0">Academic Calendar</h2>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="calendar.changeView('dayGridMonth')">
+                    <i class="fas fa-th me-1"></i>Month
+                </button>
+                <button class="btn btn-outline-primary btn-sm" onclick="calendar.changeView('timeGridWeek')">
+                    <i class="fas fa-calendar-week me-1"></i>Week
+                </button>
+                <button class="btn btn-outline-primary btn-sm" onclick="calendar.changeView('listWeek')">
+                    <i class="fas fa-list me-1"></i>Agenda
+                </button>
+            </div>
         </div>
         
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5>Upcoming Assignments</h5>
-                </div>
-                <div class="card-body">
-                    {% for assignment in assignments %}
-                    <div class="border-bottom pb-2 mb-2">
-                        <h6>{{ assignment.title }}</h6>
-                        <small class="text-muted">{{ courses[assignment.course_id] }}</small><br>
-                        <small class="text-danger">Due: {{ assignment.due_date }}</small>
+        <div class="row">
+            <div class="col-lg-9">
+                <div class="card">
+                    <div class="card-body p-3">
+                        <div id="calendar"></div>
                     </div>
-                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="col-lg-3">
+                <!-- Today's Events -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-calendar-day me-2"></i>Today's Events</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="todayEvents">
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-calendar-check fa-2x mb-2 d-block"></i>
+                                <small>No events today</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Upcoming Assignments -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-tasks me-2"></i>Upcoming Assignments</h6>
+                    </div>
+                    <div class="card-body">
+                        {% if assignments %}
+                            {% for assignment in assignments %}
+                            <div class="assignment-card">
+                                <h6 class="assignment-title">{{ assignment.title }}</h6>
+                                <div class="text-muted small mb-1">{{ courses[assignment.course_id] }}</div>
+                                <div class="assignment-due text-danger">
+                                    <i class="fas fa-clock me-1"></i>{{ assignment.due_date }}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center text-muted py-3">
+                                <i class="fas fa-clipboard-check fa-2x mb-2 d-block"></i>
+                                <small>No upcoming assignments</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Quick Stats -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>This Week</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 mb-2">
+                                <h5 class="text-primary mb-0" id="weekAssignments">0</h5>
+                                <small class="text-muted">Assignments</small>
+                            </div>
+                            <div class="col-6 mb-2">
+                                <h5 class="text-success mb-0" id="weekEvents">0</h5>
+                                <small class="text-muted">Events</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
     
-    var events = [
-        {% for assignment in assignments %}
-        {
-            title: '{{ assignment.title }}',
-            start: '{{ assignment.due_date }}',
-            color: '#dc3545',
-            textColor: 'white'
-        },
-        {% endfor %}
-    ];
+    <script>
+    let calendar;
     
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        events: events,
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        
+        var events = [
+            {% for assignment in assignments %}
+            {
+                title: '📝 {{ assignment.title }}',
+                start: '{{ assignment.due_date }}',
+                backgroundColor: '#ea4335',
+                borderColor: '#ea4335',
+                textColor: 'white',
+                extendedProps: {
+                    type: 'assignment',
+                    course: '{{ courses[assignment.course_id] }}'
+                }
+            },
+            {% endfor %}
+        ];
+        
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: events,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: ''
+            },
+            height: 'auto',
+            dayMaxEvents: 3,
+            moreLinkClick: 'popover',
+            eventClick: function(info) {
+                showEventDetails(info.event);
+            },
+            dateClick: function(info) {
+                showDayEvents(info.dateStr);
+            },
+            datesSet: function(info) {
+                updateTodayEvents();
+                updateWeekStats();
+            }
+        });
+        
+        calendar.render();
+        updateTodayEvents();
+        updateWeekStats();
     });
     
-    calendar.render();
-});
-</script>
-{% endblock %}
+    function showEventDetails(event) {
+        alert(`Event: ${event.title}\nCourse: ${event.extendedProps.course || 'N/A'}\nDate: ${event.start.toDateString()}`);
+    }
+    
+    function showDayEvents(dateStr) {
+        const events = calendar.getEvents().filter(event => 
+            event.start.toISOString().split('T')[0] === dateStr
+        );
+        
+        if (events.length > 0) {
+            let eventList = events.map(e => `• ${e.title}`).join('\n');
+            alert(`Events on ${dateStr}:\n\n${eventList}`);
+        }
+    }
+    
+    function updateTodayEvents() {
+        const today = new Date().toISOString().split('T')[0];
+        const todayEvents = calendar.getEvents().filter(event => 
+            event.start.toISOString().split('T')[0] === today
+        );
+        
+        const container = document.getElementById('todayEvents');
+        if (todayEvents.length > 0) {
+            container.innerHTML = todayEvents.map(event => `
+                <div class="border-bottom pb-2 mb-2">
+                    <small class="fw-medium">${event.title}</small><br>
+                    <small class="text-muted">${event.extendedProps.course || 'General'}</small>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-calendar-check fa-2x mb-2 d-block"></i>
+                    <small>No events today</small>
+                </div>
+            `;
+        }
+    }
+    
+    function updateWeekStats() {
+        const now = new Date();
+        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+        const weekEnd = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+        
+        const weekEvents = calendar.getEvents().filter(event => {
+            const eventDate = event.start;
+            return eventDate >= weekStart && eventDate <= weekEnd;
+        });
+        
+        const assignments = weekEvents.filter(e => e.extendedProps.type === 'assignment').length;
+        const events = weekEvents.length - assignments;
+        
+        document.getElementById('weekAssignments').textContent = assignments;
+        document.getElementById('weekEvents').textContent = events;
+    }
+    </script>
+    
+    <style>
+    .fc-event {
+        border-radius: 6px !important;
+        border: none !important;
+        font-size: 12px !important;
+    }
+    
+    .fc-daygrid-event {
+        margin: 1px 2px !important;
+    }
+    
+    .fc-button {
+        background: var(--primary-color) !important;
+        border-color: var(--primary-color) !important;
+    }
+    
+    .fc-button:hover {
+        background: var(--primary-hover) !important;
+        border-color: var(--primary-hover) !important;
+    }
+    
+    .fc-today {
+        background-color: rgba(26, 115, 232, 0.1) !important;
+    }
+    </style>
+</body>
+</html>

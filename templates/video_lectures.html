@@ -1,72 +1,181 @@
-{% extends "base.html" %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course._id) }}">{{ course.name }}</a></li>
-<li class="breadcrumb-item active">Video Lectures</li>
-{% endblock %}
-
-{% block content %}
-<div class="container">
-    <h2><i class="fas fa-video"></i> Video Lectures - {{ course.name }}</h2>
-    
-    {% if session.role == 'teacher' %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>Upload New Video Lecture</h5>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Lectures - BrainLow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <span>BrainLow</span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="nav-link me-3">{{ session.full_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
         </div>
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('upload_video', course_id=course._id) }}">
-                <div class="mb-3">
-                    <label class="form-label">Title</label>
-                    <input type="text" class="form-control" name="title" required>
+    </nav>
+
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course._id) }}">{{ course.name }}</a></li>
+                <li class="breadcrumb-item active">Video Lectures</li>
+            </ol>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-video me-2 text-info"></i>
+                <h2 class="mb-0">Video Lectures</h2>
+            </div>
+            {% if session.role == 'teacher' %}
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                <i class="fas fa-plus me-2"></i>Add Video
+            </button>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            {% if lectures %}
+                {% for lecture in lectures %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        {% if 'youtube.com' in lecture.video_url or 'youtu.be' in lecture.video_url %}
+                        {% set video_id = lecture.video_url.split('v=')[1].split('&')[0] if 'v=' in lecture.video_url else lecture.video_url.split('/')[-1] %}
+                        <div class="position-relative">
+                            <img src="https://img.youtube.com/vi/{{ video_id }}/maxresdefault.jpg" 
+                                 class="card-img-top" style="height: 200px; object-fit: cover;" alt="Video thumbnail">
+                            <div class="position-absolute top-50 start-50 translate-middle">
+                                <button class="btn btn-primary rounded-circle" style="width: 60px; height: 60px;" 
+                                        onclick="playVideo('{{ video_id }}', '{{ lecture.title }}')">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ lecture.title }}</h5>
+                            <p class="card-text text-muted">{{ lecture.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>{{ lecture.uploaded_at.strftime('%Y-%m-%d') }}
+                                </small>
+                                {% if 'youtube.com' not in lecture.video_url and 'youtu.be' not in lecture.video_url %}
+                                <a href="{{ lecture.video_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-external-link-alt me-1"></i>Watch
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Description</label>
-                    <textarea class="form-control" name="description" rows="3"></textarea>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="fas fa-video fa-3x text-muted mb-3 d-block"></i>
+                        <h5 class="text-muted mb-2">No video lectures yet</h5>
+                        <p class="text-muted">
+                            {% if session.role == 'teacher' %}
+                            Click "Add Video" to upload your first lecture
+                            {% else %}
+                            Your teacher will add video lectures here
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Video URL (YouTube/Vimeo)</label>
-                    <input type="url" class="form-control" name="video_url" placeholder="https://www.youtube.com/watch?v=..." required>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    {% if session.role == 'teacher' %}
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-video me-2"></i>Add Video Lecture</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <button type="submit" class="btn btn-primary">Upload Video</button>
-            </form>
+                <form method="POST" action="{{ url_for('upload_video', course_id=course._id) }}">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Video URL</label>
+                            <input type="url" class="form-control" name="video_url" 
+                                   placeholder="https://www.youtube.com/watch?v=..." required>
+                            <div class="form-text">Supports YouTube, Vimeo, and other video platforms</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Video</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
     {% endif %}
-    
-    <div class="row">
-        {% for lecture in lectures %}
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">{{ lecture.title }}</h5>
-                    <p class="card-text">{{ lecture.description }}</p>
-                    <small class="text-muted">Uploaded: {{ lecture.uploaded_at.strftime('%Y-%m-%d') }}</small>
-                    
-                    {% if 'youtube.com' in lecture.video_url or 'youtu.be' in lecture.video_url %}
-                    {% set video_id = lecture.video_url.split('v=')[1].split('&')[0] if 'v=' in lecture.video_url else lecture.video_url.split('/')[-1] %}
-                    <div class="mt-3">
-                        <iframe width="100%" height="200" 
-                                src="https://www.youtube.com/embed/{{ video_id }}" 
-                                frameborder="0" allowfullscreen></iframe>
-                    </div>
-                    {% else %}
-                    <div class="mt-3">
-                        <a href="{{ lecture.video_url }}" target="_blank" class="btn btn-primary">
-                            <i class="fas fa-play"></i> Watch Video
-                        </a>
-                    </div>
-                    {% endif %}
+
+    <!-- Video Player Modal -->
+    <div class="modal fade" id="videoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="videoTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="videoContainer"></div>
                 </div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    
-    {% if not lectures %}
-    <div class="text-center">
-        <p class="text-muted">No video lectures available yet.</p>
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function playVideo(videoId, title) {
+        document.getElementById('videoTitle').textContent = title;
+        document.getElementById('videoContainer').innerHTML = 
+            `<iframe width="100%" height="400" src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+             frameborder="0" allowfullscreen></iframe>`;
+        
+        const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+        modal.show();
+        
+        document.getElementById('videoModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('videoContainer').innerHTML = '';
+        });
+    }
+    </script>
+</body>
+</html>

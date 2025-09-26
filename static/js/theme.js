@@ -49,20 +49,6 @@ class ThemeManager {
     }
 
     createControls() {
-        // Theme Toggle - bottom right for admin, top right for others
-        const isAdmin = window.location.port === '5001' || document.title.includes('Admin');
-        const themeToggle = document.createElement('button');
-        themeToggle.className = 'btn btn-outline-secondary btn-sm theme-toggle-btn';
-        
-        if (isAdmin) {
-            themeToggle.style.cssText = 'position: fixed; bottom: 20px; right: 80px; z-index: 1050; border-radius: 50%; width: 50px; height: 50px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
-        } else {
-            themeToggle.style.cssText = 'position: fixed; top: 15px; right: 15px; z-index: 1050; border-radius: 50%; width: 40px; height: 40px;';
-        }
-        
-        themeToggle.innerHTML = `<i class="fas fa-${this.currentTheme === 'light' ? 'moon' : 'sun'}"></i>`;
-        themeToggle.onclick = () => this.toggleTheme();
-        document.body.appendChild(themeToggle);
 
         // Language Selector in sidebar
         const sidebar = document.querySelector('.sidebar');

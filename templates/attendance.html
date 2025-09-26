@@ -1,139 +1,233 @@
-{% extends "base.html" %}
-
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course._id) }}">{{ course.name }}</a></li>
-<li class="breadcrumb-item active">Attendance</li>
-{% endblock %}
-
-{% block content %}
-<div class="container">
-    <div class="d-flex justify-content-between mb-4">
-        <h2><i class="fas fa-user-check"></i> Attendance - {{ course.name }}</h2>
-        <div>
-            <span class="badge bg-info">{{ today }}</span>
-            <a href="{{ url_for('attendance_report', course_id=course._id) }}" class="btn btn-outline-primary btn-sm ms-2">
-                <i class="fas fa-chart-bar"></i> View Report
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance - BrainLow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <span>BrainLow</span>
             </a>
+            <div class="d-flex align-items-center">
+                <span class="nav-link me-3">{{ session.full_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
         </div>
-    </div>
-    
-    <div class="card">
-        <div class="card-header">
-            <h5>Mark Attendance for Today</h5>
+    </nav>
+
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Attendance</li>
+            </ol>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-user-check me-2 text-secondary"></i>
+                <h2 class="mb-0">Attendance Management</h2>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="chip chip-primary">
+                    <i class="fas fa-calendar me-1"></i>
+                    {{ today or 'Today' }}
+                </div>
+                {% if course._id != 'general' %}
+                <a href="{{ url_for('attendance_report', course_id=course._id) }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-chart-bar me-1"></i>View Report
+                </a>
+                {% endif %}
+            </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Student Name</th>
-                            <th>Email</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for enrollment in enrollments %}
-                        {% set student = enrollment.student[0] %}
-                        {% set student_id = student._id|string %}
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="profile-circle me-2" style="width: 30px; height: 30px; font-size: 12px;">
-                                        {{ student.full_name[0].upper() }}
-                                    </div>
-                                    {{ student.full_name }}
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Mark Attendance</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if enrollments %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Student</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for enrollment in enrollments %}
+                                        {% set student = enrollment.student[0] %}
+                                        {% set student_id = student._id|string %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar avatar-sm me-2">
+                                                        {{ student.full_name[0].upper() }}
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-medium">{{ student.full_name }}</div>
+                                                        <small class="text-muted">{{ student.email }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if student_id in attendance_status %}
+                                                    {% if attendance_status[student_id] == 'present' %}
+                                                    <span class="badge badge-success">Present</span>
+                                                    {% elif attendance_status[student_id] == 'absent' %}
+                                                    <span class="badge badge-danger">Absent</span>
+                                                    {% else %}
+                                                    <span class="badge badge-warning">Late</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                <span class="badge bg-light text-muted">Not Marked</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if course._id != 'general' %}
+                                                <form method="POST" action="{{ url_for('mark_attendance', course_id=course._id) }}" class="d-inline">
+                                                    <input type="hidden" name="student_id" value="{{ student._id }}">
+                                                    <input type="hidden" name="date" value="{{ today }}">
+                                                    
+                                                    <div class="btn-group btn-group-sm">
+                                                        <button type="submit" name="status" value="present" class="btn btn-outline-success btn-sm" title="Present">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                        <button type="submit" name="status" value="late" class="btn btn-outline-warning btn-sm" title="Late">
+                                                            <i class="fas fa-clock"></i>
+                                                        </button>
+                                                        <button type="submit" name="status" value="absent" class="btn btn-outline-danger btn-sm" title="Absent">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-users fa-3x text-muted mb-3 d-block"></i>
+                                <h5 class="text-muted mb-2">No students enrolled</h5>
+                                <p class="text-muted">Students will appear here when they enroll in courses</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Today's Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="mb-2">
+                                    <h4 class="text-success mb-0" id="presentCount">0</h4>
+                                    <small class="text-muted">Present</small>
                                 </div>
-                            </td>
-                            <td>{{ student.email }}</td>
-                            <td>
-                                {% if student_id in attendance_status %}
-                                    {% if attendance_status[student_id] == 'present' %}
-                                    <span class="badge bg-success">Present</span>
-                                    {% elif attendance_status[student_id] == 'absent' %}
-                                    <span class="badge bg-danger">Absent</span>
-                                    {% else %}
-                                    <span class="badge bg-warning">Late</span>
-                                    {% endif %}
-                                {% else %}
-                                <span class="badge bg-secondary">Not Marked</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <form method="POST" action="{{ url_for('mark_attendance', course_id=course._id) }}" class="d-inline">
-                                    <input type="hidden" name="student_id" value="{{ student._id }}">
-                                    <input type="hidden" name="date" value="{{ today }}">
-                                    
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="submit" name="status" value="present" class="btn btn-outline-success btn-sm">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button type="submit" name="status" value="late" class="btn btn-outline-warning btn-sm">
-                                            <i class="fas fa-clock"></i>
-                                        </button>
-                                        <button type="submit" name="status" value="absent" class="btn btn-outline-danger btn-sm">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
-    <div class="row mt-4">
-        <div class="col-md-4">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-success" id="presentCount">0</h3>
-                    <small>Present</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="mb-2">
+                                    <h4 class="text-warning mb-0" id="lateCount">0</h4>
+                                    <small class="text-muted">Late</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="mb-2">
+                                    <h4 class="text-danger mb-0" id="absentCount">0</h4>
+                                    <small class="text-muted">Absent</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-warning" id="lateCount">0</h3>
-                    <small>Late</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h3 class="text-danger" id="absentCount">0</h3>
-                    <small>Absent</small>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="markAllPresent()">
+                                <i class="fas fa-check-double me-1"></i>Mark All Present
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="exportAttendance()">
+                                <i class="fas fa-download me-1"></i>Export Data
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-<script>
-// Count attendance status
-let presentCount = 0;
-let lateCount = 0;
-let absentCount = 0;
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Count attendance status
+    let presentCount = 0;
+    let lateCount = 0;
+    let absentCount = 0;
 
-{% for enrollment in enrollments %}
-{% set student_id = enrollment.student[0]._id|string %}
-{% if student_id in attendance_status %}
-    {% if attendance_status[student_id] == 'present' %}
-    presentCount++;
-    {% elif attendance_status[student_id] == 'late' %}
-    lateCount++;
-    {% elif attendance_status[student_id] == 'absent' %}
-    absentCount++;
+    {% if enrollments %}
+    {% for enrollment in enrollments %}
+    {% set student_id = enrollment.student[0]._id|string %}
+    {% if student_id in attendance_status %}
+        {% if attendance_status[student_id] == 'present' %}
+        presentCount++;
+        {% elif attendance_status[student_id] == 'late' %}
+        lateCount++;
+        {% elif attendance_status[student_id] == 'absent' %}
+        absentCount++;
+        {% endif %}
     {% endif %}
-{% endif %}
-{% endfor %}
+    {% endfor %}
+    {% endif %}
 
-document.getElementById('presentCount').textContent = presentCount;
-document.getElementById('lateCount').textContent = lateCount;
-document.getElementById('absentCount').textContent = absentCount;
-</script>
-</div>
-{% endblock %}
+    document.getElementById('presentCount').textContent = presentCount;
+    document.getElementById('lateCount').textContent = lateCount;
+    document.getElementById('absentCount').textContent = absentCount;
+
+    function markAllPresent() {
+        if (confirm('Mark all students as present?')) {
+            // Implementation for marking all present
+            alert('Feature coming soon!');
+        }
+    }
+
+    function exportAttendance() {
+        alert('Export feature coming soon!');
+    }
+    </script>
+</body>
+</html>

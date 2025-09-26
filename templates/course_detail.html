@@ -1,136 +1,1067 @@
 {% extends "base.html" %}
 
+{% block title %}{{ course.name }} - BrainLow{% endblock %}
+
 {% block breadcrumb %}
 <li class="breadcrumb-item active">{{ course.name }}</li>
 {% endblock %}
 
-<style>
-.message-bubble {
-    max-width: 70%;
-    padding: 8px 12px;
-    border-radius: 15px;
-    margin-bottom: 5px;
-}
-
-.sent-student {
-    background: #007bff;
-    color: white;
-}
-
-.received-student {
-    background: #e9ecef;
-    color: #333;
-}
-
-.message-time {
-    font-size: 0.7rem;
-    opacity: 0.7;
-    display: block;
-    margin-top: 2px;
-}
-
-.sent-student .message-time {
-    text-align: right;
-}
-
-.received-student .message-time {
-    text-align: left;
-}
-</style>
-
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <h2><i class="fas fa-book"></i> {{ course.name }}</h2>
-        <p class="text-muted">{{ course.description }}</p>
-        <p><strong>Course Code:</strong> {{ course.course_code }}</p>
-        
-        {% if session.role == 'teacher' %}
-        <div class="mb-3 d-flex flex-wrap gap-2">
-            <a href="{{ url_for('create_assignment', course_id=course._id) }}" class="btn btn-success">
-                <i class="fas fa-plus"></i> <span class="d-none d-md-inline">Create Assignment</span>
-            </a>
-            <a href="{{ url_for('video_lectures', course_id=course._id) }}" class="btn btn-info">
-                <i class="fas fa-video"></i> <span class="d-none d-md-inline">Video Lectures</span>
-            </a>
-            <a href="{{ url_for('whiteboard', course_id=course._id) }}" class="btn btn-warning">
-                <i class="fas fa-chalkboard"></i> <span class="d-none d-md-inline">Whiteboard</span>
-            </a>
-            <a href="{{ url_for('attendance', course_id=course._id) }}" class="btn btn-secondary">
-                <i class="fas fa-user-check"></i> <span class="d-none d-md-inline">Attendance</span>
-            </a>
-        </div>
-        {% else %}
-        <div class="mb-3 d-flex flex-wrap gap-2">
-            <a href="{{ url_for('video_lectures', course_id=course._id) }}" class="btn btn-info">
-                <i class="fas fa-video"></i> <span class="d-none d-md-inline">Video Lectures</span>
-            </a>
-            <a href="{{ url_for('whiteboard', course_id=course._id) }}" class="btn btn-warning">
-                <i class="fas fa-chalkboard"></i> <span class="d-none d-md-inline">Whiteboard</span>
-            </a>
-        </div>
-        {% endif %}
-
-        <!-- Materials Section -->
-        <h3><i class="fas fa-folder"></i> Materials</h3>
-        {% if session.role == 'teacher' %}
-        <div class="card mb-3">
-            <div class="card-header">
-                <h6>Upload Material</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('upload_material', course_id=course._id) }}" enctype="multipart/form-data">
-                    <div class="mb-2">
-                        <input type="text" class="form-control" name="title" placeholder="Material title" required>
+<!-- Course Header -->
+<div class="glass rounded-3xl p-5 mb-5 fade-in" style="background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(248,250,252,0.9) 100%); backdrop-filter: blur(20px);">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <div class="d-flex align-items-center">
+                <div class="course-avatar me-4 shadow-xl">
+                    {{ course.name[0].upper() }}
+                </div>
+                <div>
+                    <div class="d-flex align-items-center mb-3">
+                        <h1 class="display-6 fw-bold mb-0 me-3 text-gradient">{{ course.name }}</h1>
+                        <span class="chip chip-success shadow-md">
+                            <i class="fas fa-code me-1"></i>{{ course.course_code }}
+                        </span>
                     </div>
-                    <div class="mb-2">
-                        <textarea class="form-control" name="description" rows="2" placeholder="Description"></textarea>
+                    <p class="lead text-muted mb-4">{{ course.description or 'No description provided' }} 📚</p>
+                    <div class="d-flex gap-4">
+                        <div class="d-flex align-items-center gap-2 p-2 rounded-xl bg-gradient-primary bg-opacity-10">
+                            <div class="p-2 rounded-circle bg-gradient-primary text-white">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-gradient">{{ enrollments|length }}</div>
+                                <small class="text-muted">Students</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 p-2 rounded-xl bg-gradient-success bg-opacity-10">
+                            <div class="p-2 rounded-circle bg-gradient-success text-white">
+                                <i class="fas fa-tasks"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-gradient">{{ assignments|length }}</div>
+                                <small class="text-muted">Assignments</small>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 p-2 rounded-xl bg-gradient-warning bg-opacity-10">
+                            <div class="p-2 rounded-circle bg-gradient-warning text-white">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-gradient">{{ materials|length }}</div>
+                                <small class="text-muted">Materials</small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <input type="file" class="form-control" name="file" required>
-                    </div>
-                    <button type="submit" class="btn btn-success btn-sm">Upload</button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
-        
-        {% for material in materials %}
-        <div class="card mb-2">
-            <div class="card-body py-2">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-0">{{ material.title }}</h6>
-                        <small class="text-muted">{{ material.description }}</small>
-                    </div>
-                    <a href="{{ url_for('download_material', material_id=material._id) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-download"></i> Download
-                    </a>
                 </div>
             </div>
         </div>
-        {% endfor %}
-
-        <h3><i class="fas fa-tasks"></i> Assignments</h3>
-        {% for assignment in assignments %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5 class="card-title">{{ assignment.title }}</h5>
-                <p class="card-text">{{ assignment.description }}</p>
-                <p class="text-muted">
-                    <i class="fas fa-calendar"></i> Due: {{ assignment.due_date }} | 
-                    <i class="fas fa-star"></i> Points: {{ assignment.max_points }}
-                </p>
-                <a href="{{ url_for('assignment_detail', assignment_id=assignment._id) }}" class="btn btn-primary">
-                    <i class="fas fa-eye"></i> View Assignment
-                </a>
+        <div class="col-md-4 text-end">
+            {% if session.role == 'teacher' %}
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle shadow-colored" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-magic me-2"></i>Add Content ✨
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-xl border-0 rounded-xl">
+                    <li><a class="dropdown-item rounded-lg" href="{{ url_for('create_assignment', course_id=course._id) }}">
+                        <i class="fas fa-tasks me-2 text-success"></i>Assignment 📝
+                    </a></li>
+                    <li><a class="dropdown-item rounded-lg" href="#" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="fas fa-file me-2 text-info"></i>Material 📁
+                    </a></li>
+                    <li><a class="dropdown-item rounded-lg" href="{{ url_for('video_lectures', course_id=course._id) }}">
+                        <i class="fas fa-video me-2 text-warning"></i>Video Lecture 🎥
+                    </a></li>
+                </ul>
             </div>
+            {% endif %}
         </div>
-        {% endfor %}
-    </div>
-    
-    <div class="col-md-4">
-
     </div>
 </div>
+
+        <!-- Course Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="courseTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button">
+                    <i class="fas fa-home me-1"></i>Overview
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="assignments-tab" data-bs-toggle="tab" data-bs-target="#assignments" type="button">
+                    <i class="fas fa-tasks me-1"></i>Assignments <span class="badge bg-primary ms-1">{{ assignments|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button">
+                    <i class="fas fa-folder me-1"></i>Materials <span class="badge bg-info ms-1">{{ materials|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="messages-tab" data-bs-toggle="tab" data-bs-target="#messages" type="button">
+                    <i class="fas fa-comments me-1"></i>Messages
+                </button>
+            </li>
+        </ul>
+        
+        <!-- Tab Content -->
+        <div class="tab-content" id="courseTabContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8">
+                        <!-- Announcements -->
+                        <div class="card mb-4">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Announcements</h5>
+                                {% if session.role == 'teacher' %}
+                                <button class="btn btn-outline-primary btn-sm" onclick="showAnnouncementModal()">
+                                    <i class="fas fa-plus me-1"></i>Add
+                                </button>
+                                {% endif %}
+                            </div>
+                            <div class="card-body">
+                                <div id="announcementsList">
+                                    <div class="text-center text-muted py-3">
+                                        <i class="fas fa-bullhorn fa-2x mb-2 d-block"></i>
+                                        <p>No announcements yet</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted mb-2">Latest Assignments</h6>
+                                        {% if assignments[:3] %}
+                                            {% for assignment in assignments[:3] %}
+                                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                <div>
+                                                    <small class="fw-bold">{{ assignment.title }}</small><br>
+                                                    <small class="text-muted">Due: {{ assignment.due_date }}</small>
+                                                </div>
+                                                <a href="{{ url_for('assignment_detail', assignment_id=assignment._id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-arrow-right"></i>
+                                                </a>
+                                            </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <p class="text-muted small">No assignments yet</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="text-muted mb-2">Latest Materials</h6>
+                                        {% if materials[:3] %}
+                                            {% for material in materials[:3] %}
+                                            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                                <div>
+                                                    <small class="fw-bold">{{ material.title }}</small><br>
+                                                    <small class="text-muted">{{ material.description }}</small>
+                                                </div>
+                                                <a href="{{ url_for('download_material', material_id=material._id) }}" class="btn btn-outline-primary btn-sm">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <p class="text-muted small">No materials yet</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <!-- Course Info -->
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Course Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="course-info-item">
+                                    <strong>Instructor:</strong> {{ teacher_name }}
+                                </div>
+                                <div class="course-info-item">
+                                    <strong>Students:</strong> {{ enrollments|length }}
+                                </div>
+                                <div class="course-info-item">
+                                    <strong>Created:</strong> {{ course.created_at.strftime('%B %d, %Y') if course.created_at else 'Unknown' }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Quick Stats</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6 mb-2">
+                                        <h4 class="text-primary mb-0">{{ assignments|length }}</h4>
+                                        <small class="text-muted">Assignments</small>
+                                    </div>
+                                    <div class="col-6 mb-2">
+                                        <h4 class="text-info mb-0">{{ materials|length }}</h4>
+                                        <small class="text-muted">Materials</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Assignments Tab -->
+            <div class="tab-pane fade" id="assignments" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="mb-1"><i class="fas fa-tasks me-2"></i>Assignments</h5>
+                        <small class="text-muted">{{ assignments|length }} total assignments</small>
+                    </div>
+                    {% if session.role == 'teacher' %}
+                    <a href="{{ url_for('create_assignment', course_id=course._id) }}" class="btn btn-success">
+                        <i class="fas fa-plus me-1"></i>Create Assignment
+                    </a>
+                    {% endif %}
+                </div>
+                
+                {% if assignments %}
+                    <div class="assignments-grid">
+                        {% for assignment in assignments|sort(attribute='due_date') %}
+                        <div class="assignment-card">
+                            <div class="assignment-header">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="assignment-title mb-0">{{ assignment.title }}</h6>
+                                    <div class="assignment-status">
+                                        {% set due_date = assignment.due_date|string %}
+                                        {% if due_date < moment().format('YYYY-MM-DD') %}
+                                            <span class="badge bg-danger">Overdue</span>
+                                        {% elif due_date == moment().format('YYYY-MM-DD') %}
+                                            <span class="badge bg-warning">Due Today</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="assignment-content">
+                                <p class="assignment-description">{{ assignment.description[:100] }}{% if assignment.description|length > 100 %}...{% endif %}</p>
+                                
+                                <div class="assignment-details">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="detail-item">
+                                                <i class="fas fa-calendar-alt text-primary"></i>
+                                                <span>Due: {{ assignment.due_date }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="detail-item">
+                                                <i class="fas fa-star text-warning"></i>
+                                                <span>{{ assignment.max_points }} points</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="assignment-actions">
+                                <a href="{{ url_for('assignment_detail', assignment_id=assignment._id) }}" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-eye me-1"></i>View Assignment
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <h5>No assignments yet</h5>
+                        <p class="text-muted">Assignments will appear here when created by your instructor</p>
+                        {% if session.role == 'teacher' %}
+                        <a href="{{ url_for('create_assignment', course_id=course._id) }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Create First Assignment
+                        </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Materials Tab -->
+            <div class="tab-pane fade" id="materials" role="tabpanel">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h5 class="mb-1"><i class="fas fa-folder me-2"></i>Course Materials</h5>
+                        <small class="text-muted">{{ materials|length }} files available</small>
+                    </div>
+                    {% if session.role == 'teacher' %}
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                        <i class="fas fa-plus me-1"></i>Upload Material
+                    </button>
+                    {% endif %}
+                </div>
+                
+                {% if materials %}
+                    <div class="materials-grid">
+                        {% for material in materials|sort(attribute='title') %}
+                        <div class="material-card">
+                            <div class="material-icon">
+                                {% set file_ext = material.filename.split('.')[-1].lower() if material.filename else 'file' %}
+                                {% if file_ext in ['pdf'] %}
+                                    <i class="fas fa-file-pdf text-danger"></i>
+                                {% elif file_ext in ['doc', 'docx'] %}
+                                    <i class="fas fa-file-word text-primary"></i>
+                                {% elif file_ext in ['ppt', 'pptx'] %}
+                                    <i class="fas fa-file-powerpoint text-warning"></i>
+                                {% elif file_ext in ['xls', 'xlsx'] %}
+                                    <i class="fas fa-file-excel text-success"></i>
+                                {% elif file_ext in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                    <i class="fas fa-file-image text-info"></i>
+                                {% elif file_ext in ['mp4', 'avi', 'mov'] %}
+                                    <i class="fas fa-file-video text-purple"></i>
+                                {% else %}
+                                    <i class="fas fa-file-alt text-secondary"></i>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="material-content">
+                                <h6 class="material-title">{{ material.title }}</h6>
+                                <p class="material-description">{{ material.description[:80] }}{% if material.description|length > 80 %}...{% endif %}</p>
+                                
+                                <div class="material-meta">
+                                    {% if material.filename %}
+                                    <span class="file-type">{{ material.filename.split('.')[-1].upper() }}</span>
+                                    {% endif %}
+                                    <span class="upload-date">{{ material.created_at.strftime('%b %d') if material.created_at else 'Unknown' }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="material-actions">
+                                <a href="{{ url_for('download_material', material_id=material._id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-download me-1"></i>Download
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-folder-open"></i>
+                        </div>
+                        <h5>No materials yet</h5>
+                        <p class="text-muted">Course materials and resources will appear here when uploaded</p>
+                        {% if session.role == 'teacher' %}
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                            <i class="fas fa-plus me-1"></i>Upload First Material
+                        </button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Messages Tab -->
+            <div class="tab-pane fade" id="messages" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="card chat-container">
+                            <div class="card-header bg-primary text-white d-flex align-items-center">
+                                <div class="profile-circle me-3">
+                                    {% if session.role == 'student' %}
+                                        {{ teacher_name[0].upper() if teacher_name else 'T' }}
+                                    {% else %}
+                                        <i class="fas fa-users"></i>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if session.role == 'student' %}
+                                        <h6 class="mb-0">{{ teacher_name }}</h6>
+                                        <small>{{ course.name }}</small>
+                                    {% else %}
+                                        <h6 class="mb-0">Course Messages</h6>
+                                        <small>{{ course.name }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="card-body chat-messages" id="chatMessages" style="height: 400px; overflow-y: auto;">
+                                <div id="messagesList">
+                                    <!-- Messages will be loaded here -->
+                                </div>
+                            </div>
+                            
+                            <div class="card-footer">
+                                <form id="messageForm" class="d-flex">
+                                    <input type="text" id="messageInput" class="form-control me-2" placeholder="Type your message..." required>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Material Modal -->
+    {% if session.role == 'teacher' %}
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Material</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('upload_material', course_id=course._id) }}" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">File</label>
+                            <input type="file" class="form-control" name="file" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Announcement Modal -->
+    <div class="modal fade" id="announcementModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-bullhorn me-2"></i>Create Announcement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form onsubmit="createAnnouncement(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-control" id="announcementTitle" placeholder="Announcement title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Message</label>
+                            <textarea class="form-control" id="announcementMessage" rows="4" placeholder="Your announcement message..." required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="urgentAnnouncement">
+                                <label class="form-check-label" for="urgentAnnouncement">
+                                    Mark as urgent
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-bullhorn me-1"></i>Post Announcement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+<style>
+    .course-avatar {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        font-weight: 600;
+    }
+    
+    .course-stats {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 16px;
+    }
+    
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link.active {
+        background: none;
+        border-bottom: 2px solid #1a73e8;
+        color: #1a73e8;
+    }
+    
+    .course-info-item {
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .assignment-card {
+        padding: 15px;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        transition: all 0.2s ease;
+    }
+    
+    .assignment-card:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-color: #1a73e8;
+    }
+    
+    .assignment-title {
+        color: #1a73e8;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    .assignment-due {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    .assignment-meta {
+        font-size: 14px;
+        color: #6c757d;
+    }
+    
+    /* Assignments Grid */
+    .assignments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
+    
+    .assignment-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .assignment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        border-color: #1a73e8;
+    }
+    
+    .assignment-title {
+        color: #1a73e8;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .assignment-description {
+        color: #6c757d;
+        font-size: 14px;
+        margin-bottom: 15px;
+        line-height: 1.4;
+    }
+    
+    .assignment-details {
+        margin-bottom: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        font-size: 13px;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    
+    .detail-item i {
+        width: 16px;
+        margin-right: 6px;
+    }
+    
+    .assignment-status .badge {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    /* Materials Grid */
+    .materials-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+    }
+    
+    .material-card {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 16px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .material-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #1a73e8;
+    }
+    
+    .material-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    
+    .material-content {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .material-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #212529;
+        margin-bottom: 4px;
+        line-height: 1.3;
+    }
+    
+    .material-description {
+        font-size: 13px;
+        color: #6c757d;
+        margin-bottom: 8px;
+        line-height: 1.4;
+    }
+    
+    .material-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: #868e96;
+    }
+    
+    .file-type {
+        background: #e9ecef;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+    
+    .material-actions {
+        flex-shrink: 0;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .empty-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 32px;
+        color: #adb5bd;
+    }
+    
+    .empty-state h5 {
+        color: #495057;
+        margin-bottom: 8px;
+    }
+    
+    .empty-state p {
+        color: #6c757d;
+        margin-bottom: 20px;
+    }
+    
+    /* Chat Styles */
+    .chat-container {
+        height: 500px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .profile-circle {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .chat-messages {
+        background: #f8f9fa;
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .message-bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        margin-bottom: 10px;
+        position: relative;
+        word-wrap: break-word;
+    }
+    
+    .message-bubble.sent {
+        background: #007bff;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .message-bubble.received {
+        background: #e9ecef;
+        color: #333;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+    }
+    
+    .message-content {
+        margin-bottom: 5px;
+        line-height: 1.4;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+    
+    .message-bubble.sent .message-time {
+        text-align: right;
+    }
+    
+    .message-bubble.received .message-time {
+        text-align: left;
+    }
+    
+    .message-day-separator {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+    }
+    
+    .message-day-separator::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: #dee2e6;
+    }
+    
+    .message-day-separator span {
+        background: #f8f9fa;
+        padding: 5px 15px;
+        color: #6c757d;
+        font-size: 0.8rem;
+        border-radius: 15px;
+        border: 1px solid #dee2e6;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .assignments-grid,
+        .materials-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .assignment-card,
+        .material-card {
+            padding: 16px;
+        }
+        
+        .message-bubble {
+            max-width: 85%;
+        }
+    }
+</style>
+
+<script>
+    function showAnnouncementModal() {
+        const modal = new bootstrap.Modal(document.getElementById('announcementModal'));
+        modal.show();
+    }
+    
+    function createAnnouncement(event) {
+        event.preventDefault();
+        
+        const title = document.getElementById('announcementTitle').value;
+        const message = document.getElementById('announcementMessage').value;
+        const urgent = document.getElementById('urgentAnnouncement').checked;
+        
+        fetch(`/create_announcement/{{ course._id }}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({title, message, urgent})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Add announcement to list
+                const announcementHtml = `
+                    <div class="announcement-item border-bottom pb-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    ${urgent ? '<i class="fas fa-exclamation-triangle text-warning me-1"></i>' : ''}
+                                    ${title}
+                                </h6>
+                                <p class="text-muted mb-1">${message}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>Just now
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                const announcementsList = document.getElementById('announcementsList');
+                if (announcementsList.innerHTML.includes('No announcements yet')) {
+                    announcementsList.innerHTML = announcementHtml;
+                } else {
+                    announcementsList.insertAdjacentHTML('afterbegin', announcementHtml);
+                }
+                
+                // Close modal and reset form
+                const modal = bootstrap.Modal.getInstance(document.getElementById('announcementModal'));
+                modal.hide();
+                document.getElementById('announcementTitle').value = '';
+                document.getElementById('announcementMessage').value = '';
+                document.getElementById('urgentAnnouncement').checked = false;
+                
+                // Show success message
+                showAlert('Announcement posted successfully!', 'success');
+            } else {
+                showAlert('Error posting announcement', 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error posting announcement', 'danger');
+        });
+    }
+    
+    function showAlert(message, type) {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999;';
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+        setTimeout(() => alert.remove(), 3000);
+    }
+    
+    // Chat functionality
+    let chatMessages = [];
+    
+    function loadMessages() {
+        fetch(`/get_messages/{{ course._id }}`)
+            .then(response => response.json())
+            .then(data => {
+                chatMessages = data.messages || [];
+                displayMessages();
+            })
+            .catch(error => {
+                console.error('Error loading messages:', error);
+            });
+    }
+    
+    function displayMessages() {
+        const messagesList = document.getElementById('messagesList');
+        if (!messagesList) return;
+        
+        messagesList.innerHTML = '';
+        
+        if (chatMessages.length === 0) {
+            messagesList.innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-comments fa-2x mb-2 d-block"></i>No messages yet. Start a conversation!</div>';
+            return;
+        }
+        
+        let lastDate = '';
+        
+        chatMessages.forEach(message => {
+            const messageDate = new Date(message.sent_at).toDateString();
+            
+            // Add date separator if needed
+            if (messageDate !== lastDate) {
+                const separator = document.createElement('div');
+                separator.className = 'message-day-separator';
+                separator.innerHTML = `<span>${formatDate(messageDate)}</span>`;
+                messagesList.appendChild(separator);
+                lastDate = messageDate;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `d-flex ${message.sender_id === '{{ session.user_id }}' ? 'justify-content-end' : 'justify-content-start'}`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = `message-bubble ${message.sender_id === '{{ session.user_id }}' ? 'sent' : 'received'}`;
+            
+            const time = new Date(message.sent_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            bubbleDiv.innerHTML = `
+                <div class="message-content">${escapeHtml(message.content)}</div>
+                <div class="message-time">${time}</div>
+            `;
+            
+            messageDiv.appendChild(bubbleDiv);
+            messagesList.appendChild(messageDiv);
+        });
+        
+        // Scroll to bottom
+        const chatContainer = document.getElementById('chatMessages');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+    
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString();
+        }
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function sendMessage(content) {
+        fetch(`/send_message/{{ course._id }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `content=${encodeURIComponent(content)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadMessages(); // Reload messages
+                document.getElementById('messageInput').value = '';
+            } else {
+                showAlert(data.error || 'Failed to send message', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error sending message:', error);
+            showAlert('Failed to send message', 'danger');
+        });
+    }
+    
+    // Initialize chat when messages tab is shown
+    document.addEventListener('DOMContentLoaded', function() {
+        const messagesTab = document.getElementById('messages-tab');
+        if (messagesTab) {
+            messagesTab.addEventListener('shown.bs.tab', function() {
+                loadMessages();
+                // Auto-refresh messages every 5 seconds when tab is active
+                if (window.messageInterval) clearInterval(window.messageInterval);
+                window.messageInterval = setInterval(loadMessages, 5000);
+            });
+            
+            messagesTab.addEventListener('hidden.bs.tab', function() {
+                if (window.messageInterval) {
+                    clearInterval(window.messageInterval);
+                    window.messageInterval = null;
+                }
+            });
+        }
+        
+        // Handle message form submission
+        const messageForm = document.getElementById('messageForm');
+        if (messageForm) {
+            messageForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const input = document.getElementById('messageInput');
+                const content = input.value.trim();
+                if (content) {
+                    sendMessage(content);
+                }
+            });
+        }
+        
+        // Handle Enter key in message input
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const content = this.value.trim();
+                    if (content) {
+                        sendMessage(content);
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

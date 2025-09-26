@@ -1,49 +1,183 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ quiz.title }} - BrainLow</title>
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>
+                <span>BrainLow</span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="nav-link me-3">{{ session.full_name }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sign-out-alt me-1"></i>Logout
+                </a>
+            </div>
+        </div>
+    </nav>
 
-{% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('practice_quiz') }}">Practice Quiz</a></li>
-<li class="breadcrumb-item active">{{ quiz.title }}</li>
-{% endblock %}
+    <div class="container mt-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('practice_quiz') }}">Practice Quiz</a></li>
+                <li class="breadcrumb-item active">{{ quiz.title }}</li>
+            </ol>
+        </nav>
 
-{% block content %}
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h4><i class="fas fa-brain"></i> {{ quiz.title }}</h4>
-                    <small>{{ quiz.category }} - {{ quiz.difficulty }} Level</small>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('submit_practice_quiz', quiz_id=quiz._id) }}">
-                        {% for question in quiz.questions %}
-                        <div class="mb-4 p-3 border rounded">
-                            <h6>Question {{ loop.index }}</h6>
-                            <p class="fw-bold">{{ question.question }}</p>
-                            
-                            {% for option in question.options %}
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" 
-                                       name="answer_{{ loop.index0 }}" 
-                                       value="{{ loop.index0 }}" 
-                                       id="q{{ loop.index0 }}_opt{{ loop.index0 }}" required>
-                                <label class="form-check-label" for="q{{ loop.index0 }}_opt{{ loop.index0 }}">
-                                    {{ ['A', 'B', 'C', 'D'][loop.index0] }}. {{ option }}
-                                </label>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-brain me-2"></i>{{ quiz.title }}
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="quiz-container">
+                            <div id="question-counter" class="mb-3">
+                                <span class="badge bg-primary">Question <span id="current-question">1</span> of {{ quiz.questions|length }}</span>
                             </div>
-                            {% endfor %}
+                            
+                            <div id="question-content">
+                                <h5 id="question-text">{{ quiz.questions[0].question }}</h5>
+                                <div id="options-container" class="mt-4">
+                                    {% for option in quiz.questions[0].options %}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="answer" id="option{{ loop.index0 }}" value="{{ loop.index0 }}">
+                                        <label class="form-check-label" for="option{{ loop.index0 }}">
+                                            {{ option }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between mt-4">
+                                <button id="prev-btn" class="btn btn-outline-secondary" onclick="previousQuestion()" disabled>
+                                    <i class="fas fa-arrow-left me-2"></i>Previous
+                                </button>
+                                <button id="next-btn" class="btn btn-primary" onclick="nextQuestion()">
+                                    Next<i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+                                <button id="submit-btn" class="btn btn-success" onclick="submitQuiz()" style="display: none;">
+                                    <i class="fas fa-check me-2"></i>Submit Quiz
+                                </button>
+                            </div>
                         </div>
-                        {% endfor %}
                         
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="fas fa-check"></i> Submit Quiz
-                            </button>
+                        <div id="results-container" style="display: none;">
+                            <div class="text-center">
+                                <div class="mb-4">
+                                    <i class="fas fa-trophy text-warning" style="font-size: 48px;"></i>
+                                </div>
+                                <h4>Quiz Completed!</h4>
+                                <p class="lead">Your Score: <span id="final-score" class="text-success fw-bold"></span></p>
+                                <div class="mt-4">
+                                    <a href="{{ url_for('practice_quiz') }}" class="btn btn-primary me-2">
+                                        <i class="fas fa-redo me-2"></i>Try Another Quiz
+                                    </a>
+                                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-home me-2"></i>Back to Dashboard
+                                    </a>
+                                </div>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const quiz = {{ quiz|tojson }};
+        let currentQuestion = 0;
+        let userAnswers = [];
+        let score = 0;
+
+        function showQuestion(index) {
+            const question = quiz.questions[index];
+            document.getElementById('current-question').textContent = index + 1;
+            document.getElementById('question-text').textContent = question.question;
+            
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, i) => {
+                const div = document.createElement('div');
+                div.className = 'form-check mb-2';
+                div.innerHTML = `
+                    <input class="form-check-input" type="radio" name="answer" id="option${i}" value="${i}" ${userAnswers[index] === i ? 'checked' : ''}>
+                    <label class="form-check-label" for="option${i}">
+                        ${option}
+                    </label>
+                `;
+                optionsContainer.appendChild(div);
+            });
+            
+            document.getElementById('prev-btn').disabled = index === 0;
+            
+            if (index === quiz.questions.length - 1) {
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('submit-btn').style.display = 'inline-block';
+            } else {
+                document.getElementById('next-btn').style.display = 'inline-block';
+                document.getElementById('submit-btn').style.display = 'none';
+            }
+        }
+
+        function nextQuestion() {
+            saveCurrentAnswer();
+            if (currentQuestion < quiz.questions.length - 1) {
+                currentQuestion++;
+                showQuestion(currentQuestion);
+            }
+        }
+
+        function previousQuestion() {
+            saveCurrentAnswer();
+            if (currentQuestion > 0) {
+                currentQuestion--;
+                showQuestion(currentQuestion);
+            }
+        }
+
+        function saveCurrentAnswer() {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (selectedOption) {
+                userAnswers[currentQuestion] = parseInt(selectedOption.value);
+            }
+        }
+
+        function submitQuiz() {
+            saveCurrentAnswer();
+            
+            score = 0;
+            quiz.questions.forEach((question, index) => {
+                if (userAnswers[index] === question.correct_answer) {
+                    score++;
+                }
+            });
+            
+            const percentage = Math.round((score / quiz.questions.length) * 100);
+            document.getElementById('final-score').textContent = `${score}/${quiz.questions.length} (${percentage}%)`;
+            
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('results-container').style.display = 'block';
+        }
+
+        // Initialize quiz
+        showQuestion(0);
+    </script>
+</body>
+</html>
